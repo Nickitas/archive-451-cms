@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Архив 451 — саламандра пламени">
+  <title>Архив 451</title>
+  <defs>
+    <linearGradient id="fire" x1="120" y1="60" x2="400" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD84D"/>
+      <stop offset="0.35" stop-color="#FB8500"/>
+      <stop offset="0.7" stop-color="#E85D04"/>
+      <stop offset="1" stop-color="#C1121F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- лапы -->
+  <g stroke="url(#fire)" stroke-width="26" stroke-linecap="round" fill="none">
+    <path d="M 383 227 L 434 203"/>
+    <path d="M 391 322 L 445 337"/>
+    <path d="M 232 424 L 222 479"/>
+    <path d="M 176 401 L 144 447"/>
+  </g>
+
+  <!-- хвост, уходящий к пламени -->
+  <path d="M 160 401 C 148 340 176 306 226 292" fill="none" stroke="url(#fire)" stroke-width="34" stroke-linecap="round"/>
+
+  <!-- тело: кольцо -->
+  <path d="M 307 145 A 150 150 0 1 1 160 401" fill="none" stroke="url(#fire)" stroke-width="46" stroke-linecap="round"/>
+
+  <!-- голова -->
+  <circle cx="313" cy="138" r="44" fill="url(#fire)"/>
+  <circle cx="325" cy="128" r="10" fill="#5C1A02"/>
+
+  <!-- пламя (451°F) -->
+  <path d="M 256 226 C 280 258 292 276 292 296 A 36 36 0 1 1 220 296 C 220 276 232 258 256 226 Z" fill="url(#fire)"/>
+</svg>
