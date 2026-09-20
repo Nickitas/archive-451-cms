@@ -41,7 +41,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <SiteHeader />
           {children}
         </ThemeProvider>
       </body>

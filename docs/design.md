@@ -50,10 +50,10 @@
 
 ## UI-kit
 
-shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`outline`/`ghost`, `asChild` для Link), Badge, Input, Select, Popover, Sheet (`side="bottom"`), ScrollArea.
+shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`outline`/`ghost`, `asChild` для Link), Badge, Input, Select, Popover, Sheet (`side="bottom"`), ScrollArea, DropdownMenu.
 Новые: `pnpm exec shadcn add <name>`.
 
-Каркас (`@/shared/components/`): `SiteHeader` (h-16, лого `public/logo.svg` — «Архив 451», навигация, ThemeToggle), `SiteNav` (активная ссылка через usePathname), `SiteContainer` (единая сетка), `ThemeProvider`/`ThemeToggle` (next-themes: system по умолчанию).
+Каркас (`@/shared/components/`): `SiteHeader` (h-16, лого `public/logo.svg` — «Архив 451», навигация, ThemeToggle, слот меню пользователя — `UserMenu` из модуля auth, пользователь приходит пропсом из приватного layout), `SiteNav` (активная ссылка через usePathname), `SiteContainer` (единая сетка), `ThemeProvider`/`ThemeToggle` (next-themes: system по умолчанию), `PagePlaceholder` (заглушка раздела в стиле empty-state).
 
 **Айдентика** (отсылка к «451 °F по Фаренгейту» — температуре возгорания бумаги):
 `public/logo.svg` — саламандра, свёрнутая кольцом, с языком пламени в центре (хранитель архива);
@@ -68,6 +68,7 @@ shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`
 - **Страница книги:** «Назад», сетка `[280px_minmax(0,1fr)]`, мета: статус + оценка + дата + счётчик + теги, описание (`max-w-2xl`), `sourceUrl` → «Открыть в Яндекс.Книгах» (`target="_blank"`), секция «Заметки».
 - **Заметка (NoteCard):** заголовок + дата (ru-RU) + Markdown (`react-markdown` + `remark-gfm`) в `prose prose-sm dark:prose-invert`; ссылки и код — primary.
 - **Пустые состояния:** пунктирная граница, иконка в кольце (primary/70), подсказка, кнопка «Сбросить фильтры».
+- **Экран входа/регистрации (`/auth`):** центрированная карточка `max-w-md rounded-2xl border-border/70 bg-card/60`, пламя в кольце (`bg-primary/10 ring-primary/25`), заголовок-градиент; переключатель форм — две пилюли `rounded-full` (активная — заливка primary, `aria-pressed`); поля — `Input h-10` с иконкой слева и «глазом» для пароля; ошибки — плашка `border-destructive/30 bg-destructive/10`; кнопка отправки `size="lg"` во всю ширину.
 - **Скелетоны + Suspense** в compose; пагинация: Select 12/24/48 + круглые номера страниц с «…».
 
 ## Доступность
