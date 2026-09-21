@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { SiteContainer } from '@/shared/components/site-container';
-import { AuthView } from './auth-view';
 
-export function AuthScreen() {
+// Общий каркас страниц /auth/*: тёплый градиент сверху, карточка по центру
+export function AuthScreen({ children }: { children: ReactNode }) {
     return (
         <main className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden bg-background text-foreground">
             <div
@@ -10,7 +11,7 @@ export function AuthScreen() {
             />
 
             <SiteContainer className="relative flex flex-1 flex-col items-center justify-center py-8">
-                <AuthView />
+                {children}
             </SiteContainer>
         </main>
     );

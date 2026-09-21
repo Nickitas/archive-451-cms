@@ -5,8 +5,9 @@ import { LoaderCircle, Lock, Mail } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { AUTH_FORM_STATE_INITIAL, type AuthFormState } from '../domain/auth';
 import { login } from '../actions/auth';
-import { FormError } from './form-error';
+import { FormMessage } from './form-message';
 import { FormField } from './form-field';
+import Link from 'next/link';
 
 type LoginFormProps = {
     onSwitchMode: () => void;
@@ -17,8 +18,6 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
 
     return (
         <form action={action} className="flex flex-col gap-4">
-            {state.error && <FormError message={state.error} />}
-
             <FormField
                 id="login-email"
                 name="email"
@@ -46,6 +45,8 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
                 {pending ? 'Входим…' : 'Войти'}
             </Button>
 
+            {state.error && <FormMessage status='error' message={state.error} />}
+
             <p className="text-center text-sm text-muted-foreground">
                 Нет аккаунта?{' '}
                 <button
@@ -55,6 +56,14 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
                 >
                     Зарегистрируйтесь
                 </button>
+            </p>
+            <p className="text-center">
+                <Link
+                    href="/auth/forgot-password"
+                    className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    Забыли пароль?
+                </Link>
             </p>
         </form>
     );

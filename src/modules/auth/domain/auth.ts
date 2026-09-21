@@ -8,6 +8,7 @@ export const AUTH_MODE_LABELS: Record<AuthMode, string> = {
 // Состояние формы после вызова серверного экшена; до первой отправки — AUTH_FORM_STATE_INITIAL
 export type AuthFormState = {
     error?: string;
+    success?: string;
     fieldErrors?: Partial<Record<'email' | 'password' | 'passwordConfirm', string[]>>;
 };
 
@@ -37,6 +38,7 @@ export type AuthUser = {
     id: number;
     email: string;
     role: AuthRole;
+    createdAt: string;
 };
 
 // Cookie сессии, собранная так же, как её ставит Payload (REST-логин);

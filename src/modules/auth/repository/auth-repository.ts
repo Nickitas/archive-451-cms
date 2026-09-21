@@ -3,7 +3,10 @@ import { headers } from 'next/headers';
 import { getAppPayload } from '@/shared/payload';
 import type { AuthCredentials, AuthSession, AuthUser, SessionCookie } from '../domain/auth';
 
-// Cookie-объект в том виде, в каком его отдают генераторы Payload
+/**
+ * Cookie-объект. 
+ * Вид, в котором его отдает генераторы Payload
+ */
 type PayloadCookieObject = {
     name: string;
     value?: string;
@@ -43,7 +46,25 @@ async function getPayloadCookie(
 }
 
 export const AuthRepository = {
-    // Текущий пользователь сессии; null — не авторизован
+    // Cookie сессии по правилам Payload — ровно то же, что ставит REST-логин
+    getSessionCookie(token: string): Promise<SessionCookie> {
+        return getPayloadCookie((collectionAuthConfig, cookiePrefix) =>
+            generatePayloadCookie({ collectionAuthConfig, cookiePrefix, returnCookieAsObject: true, token }),
+        );
+    },
+
+    // Просроченная cookie сессии — для выхода (как у REST-логаута Payload)
+    getExpiredSessionCookie(): Promise<SessionCookie> {
+        return getPayloadCookie((collectionAuthConfig, cookiePrefix) =>
+            generateExpiredPayloadCookie({ collectionAuthConfig, cookiePrefix, returnCookieAsObject: true }),
+        );
+    },
+
+    /**
+     * Сессия текущего пользователя. 
+     * @returns null - пользователь не авторизован. 
+     * @returns User. 
+     */
     async me(): Promise<AuthUser | null> {
         const payload = await getAppPayload();
         const { user } = await payload.auth({ headers: await headers() });
@@ -52,10 +73,14 @@ export const AuthRepository = {
             return null;
         }
 
-        return { id: user.id, email: user.email, role: user.role };
+        return { id: user.id, email: user.email, role: user.role, createdAt: user.createdAt };
     },
 
-    // Вход; null — неверная почта/пароль или блокировка после неудачных попыток
+    /**
+     * Вход. 
+     * @returns null — неверная почта/пароль или блокировка после неудачных попыток
+     * @returns token. 
+     */
     async login({ email, password }: AuthCredentials): Promise<AuthSession | null> {
         const payload = await getAppPayload();
 
@@ -80,7 +105,11 @@ export const AuthRepository = {
         }
     },
 
-    // Регистрация с авто-входом; 'email-taken' — почта уже занята, null — прочая ошибка
+    /**
+     * Регистрация с авто-входом.
+     * @returns 'email-taken' — почта уже занята, null — прочая ошибка
+     * @returns вход.
+     */
     async register({ email, password }: AuthCredentials): Promise<AuthSession | 'email-taken' | null> {
         const payload = await getAppPayload();
 
@@ -107,17 +136,36 @@ export const AuthRepository = {
         return AuthRepository.login({ email, password });
     },
 
-    // Cookie сессии по правилам Payload — ровно то же, что ставит REST-логин
-    getSessionCookie(token: string): Promise<SessionCookie> {
-        return getPayloadCookie((collectionAuthConfig, cookiePrefix) =>
-            generatePayloadCookie({ collectionAuthConfig, cookiePrefix, returnCookieAsObject: true, token }),
-        );
+    /**
+     * Сброс пароля. 
+     * Результат всегда «успех» — не раскрываем существование почты (анти-энумерация)
+     * @param email 
+     */
+    async requestPasswordReset(email: string): Promise<void> {
+        const payload = await getAppPayload();
+        await payload.forgotPassword({ collection: 'users', data: { email } });
     },
 
-    // Просроченная cookie сессии — для выхода (как у REST-логаута Payload)
-    getExpiredSessionCookie(): Promise<SessionCookie> {
-        return getPayloadCookie((collectionAuthConfig, cookiePrefix) =>
-            generateExpiredPayloadCookie({ collectionAuthConfig, cookiePrefix, returnCookieAsObject: true }),
-        );
+    /**
+     * Сброс по токену.
+     * null — токен невалиден/просрочен, иначе — сессия авто-входа. 
+     */
+    async resetPassword({ token, password }: { token: string; password: string }): Promise<AuthSession | null> {
+        const payload = await getAppPayload();
+
+        let email: string;
+        try {
+            const result = await payload.resetPassword({
+                collection: 'users',
+                data: { password, token },
+                overrideAccess: true, // у resetPassword этот флаг обязателен по типам
+            });
+            email = result.user.email as string;
+        } catch {
+            // Payload кидает APIError 403 «Token is either invalid or has expired.»
+            return null;
+        }
+
+        return AuthRepository.login({ email, password });
     },
 };

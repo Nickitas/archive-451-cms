@@ -43,22 +43,30 @@ ui/           book-card, book-skeleton, books-filters, books-pagination, note-ca
 Модуль `src/modules/auth/` — те же слои плюс `actions/`:
 
 ```
-compose/      auth-screen.tsx (сервер: каркас страницы), auth-view.tsx ('use client': карточка, переключатель вход/регистрация)
+compose/      auth-screen.tsx (сервер: общий каркас страниц /auth/*), auth-view.tsx ('use client':
+              карточка, переключатель вход/регистрация), profile-view.tsx (сервер: me() → карточка профиля)
 model/        use-auth-view.ts — активная форма (AuthMode: 'login' | 'register')
-domain/       auth.ts — AuthMode, AUTH_MODE_LABELS, AuthFormState (error + fieldErrors), AuthCredentials/SessionCookie
-repository/   auth-repository.ts — payload.login/create/find/auth (Local API), cookie сессии через
-              generatePayloadCookie / generateExpiredPayloadCookie, me() — пользователь сессии
-ui/           login-form, registration-form, form-field (лейбл + иконка + Input + ошибки поля), form-error,
+domain/       auth.ts — AuthMode, AUTH_MODE_LABELS, AuthFormState (error + success + fieldErrors),
+              AuthCredentials/SessionCookie, AuthUser
+repository/   auth-repository.ts — payload.login/create/find/auth/forgotPassword/resetPassword (Local API),
+              cookie сессии через generatePayloadCookie / generateExpiredPayloadCookie,
+              me() — пользователь сессии
+ui/           auth-card (каркас карточки: пламя, заголовок, слот контента), login-form, registration-form,
+              forgot-password-form, reset-password-form, form-field (лейбл + иконка + Input + ошибки поля),
+              form-message (плашка error/success), profile-card,
               user-menu (меню ЛК в хедере: email/роль, разделы, «Выйти»)
 actions/      auth.ts — server actions форм: валидация zod → repository → cookie сессии → redirect('/'),
-              плюс logoutAction
+              плюс forgotPasswordAction / resetPasswordAction (восстановление пароля) и logoutAction
 ```
 
 Сессия — JWT в httpOnly cookie `payload-token`: экшен ставит её через `generatePayloadCookie`
 (атрибуты — как у REST-логина Payload), логаут гасит её через `generateExpiredPayloadCookie`
 (`logoutAction`). Приватные маршруты — группа `(app)/(private)/`: layout делает `AuthRepository.me()`
 и при пустом пользователе редиректит на `/auth`; пользователь передаётся в `SiteHeader` пропсом
-(без клиентского fetch — данные пользователя берутся на сервере).
+(без клиентского fetch — данные пользователя берутся на сервере). Страницы `/auth/*` накрывает
+layout `(app)/auth/layout.tsx` с обратным гардом: авторизованный → `/`. Письмо сброса пароля
+рендерится генераторами в коллекции `users` и уходит через email-адаптер из `payload.config.ts`
+(в dev — консольный адаптер: ссылка с токеном печатается в лог сервера).
 
 ### 2.2 Правила зависимостей
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { UserRound } from 'lucide-react';
-import { PagePlaceholder } from '@/shared/components/page-placeholder';
+import { SiteContainer } from '@/shared/components/site-container';
+import { ProfileView } from '@/modules/auth/compose/profile-view';
 
 export const metadata: Metadata = {
     title: 'Профиль',
@@ -9,11 +9,9 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
     return (
         <main className="flex flex-1 flex-col">
-            <PagePlaceholder
-                icon={UserRound}
-                title="Профиль"
-                description="Здесь появится ваш профиль: имя, почта и аватар."
-            />
+            <SiteContainer className="flex flex-1 flex-col items-center justify-center py-8">
+                <ProfileView />
+            </SiteContainer>
         </main>
     );
 }
