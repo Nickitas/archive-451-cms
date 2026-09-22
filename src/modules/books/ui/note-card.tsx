@@ -1,6 +1,10 @@
+'use client';
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from 'cn';
+import { useLocale } from '@/shared/i18n/locale-provider';
+import { formatDate } from '@/shared/i18n/format';
 import type { Note } from '../domain/note';
 
 type NoteCardProps = {
@@ -9,7 +13,8 @@ type NoteCardProps = {
 };
 
 export function NoteCard({ note, className }: NoteCardProps) {
-    const date = new Date(note.createdAt).toLocaleDateString('ru-RU', {
+    const locale = useLocale();
+    const date = formatDate(locale, note.createdAt, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',

@@ -1,10 +1,12 @@
 'use client';
 
 import { BookOpen, LayoutGrid, SlidersHorizontal } from 'lucide-react';
+import { useLocale } from '@/shared/i18n/locale-provider';
 import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/components/ui/sheet';
 import type { Book } from '../domain/book';
+import { booksCopy } from '../domain/i18n';
 import { useBooksView } from '../model/use-books-view';
 import { BookCard } from '../ui/book-card';
 import { BooksFilters } from '../ui/books-filters';
@@ -15,6 +17,8 @@ type BooksListViewProps = {
 };
 
 export function BooksListView({ books }: BooksListViewProps) {
+    const locale = useLocale();
+    const t = booksCopy[locale];
     const v = useBooksView(books);
 
     return (
@@ -22,11 +26,11 @@ export function BooksListView({ books }: BooksListViewProps) {
             <header className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="bg-linear-to-r from-foreground via-foreground to-foreground/45 bg-clip-text font-heading text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl">
-                        Библиотека
+                        {t.list.title}
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">
-                        Показано{' '}
-                        <span className="font-medium text-foreground">{v.filteredCount}</span> из{' '}
+                        {t.list.showingPrefix}{' '}
+                        <span className="font-medium text-foreground">{v.filteredCount}</span> {t.list.showingOf}{' '}
                         <span className="font-medium text-foreground">{v.totalCount}</span>
                     </p>
                 </div>
@@ -39,7 +43,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                         className="h-8 gap-2"
                     >
                         <LayoutGrid className="h-4 w-4" />
-                        Плитка
+                        {t.list.viewGrid}
                     </Button>
 
                     <Button
@@ -49,7 +53,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                         className="h-8 gap-2"
                     >
                         <BookOpen className="h-4 w-4" />
-                        Список
+                        {t.list.viewList}
                     </Button>
                 </div>
             </header>
@@ -78,7 +82,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                         <SheetTrigger asChild>
                             <Button variant="outline" className="flex-1">
                                 <SlidersHorizontal className="mr-2 h-4 w-4" />
-                                Фильтры
+                                {t.list.filtersButton}
                                 {v.activeFilterCount > 0 && (
                                     <span className="ml-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                                         {v.activeFilterCount}
@@ -89,7 +93,7 @@ export function BooksListView({ books }: BooksListViewProps) {
 
                         <SheetContent side="bottom" className="max-h-[90vh] rounded-t-2xl">
                             <SheetHeader>
-                                <SheetTitle>Фильтры</SheetTitle>
+                                <SheetTitle>{t.list.filtersButton}</SheetTitle>
                             </SheetHeader>
 
                             <ScrollArea className="mt-6 h-[65vh] pr-4">
@@ -116,7 +120,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                         variant="outline"
                         size="icon"
                         onClick={v.toggleView}
-                        aria-label="Переключить вид"
+                        aria-label={t.list.toggleViewAria}
                     >
                         {v.view === 'grid' ? <BookOpen className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
                     </Button>
@@ -129,14 +133,14 @@ export function BooksListView({ books }: BooksListViewProps) {
                         <BookOpen className="h-7 w-7 text-primary/70" />
                     </div>
 
-                    <h2 className="font-heading text-lg font-bold tracking-tight">Книги не найдены</h2>
+                    <h2 className="font-heading text-lg font-bold tracking-tight">{t.list.emptyTitle}</h2>
 
                     <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                        Добавьте первую книгу в админке или сбросьте активные фильтры.
+                        {t.list.emptyDescription}
                     </p>
 
                     <Button onClick={v.clearFilters} variant="outline" className="mt-5">
-                        Сбросить фильтры
+                        {t.list.resetFilters}
                     </Button>
                 </div>
             ) : (

@@ -3,7 +3,11 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, BookOpen, CalendarDays, ExternalLink, Star } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { SiteContainer } from '@/shared/components/site-container';
+import { getLocale } from '@/shared/i18n/get-locale';
+import { formatDate } from '@/shared/i18n/format';
+import type { Locale } from '@/shared/i18n/config';
 import type { Book } from '../domain/book';
+import { booksCopy } from '../domain/i18n';
 import { pluralizeNotes } from '../domain/note';
 import { BooksRepository } from '../repository/books-repository';
 import { NoteCard } from '../ui/note-card';
@@ -16,20 +20,23 @@ export async function BookDetail({ id }: { id: number }) {
         notFound();
     }
 
+    const locale = await getLocale();
     const notes = await BooksRepository.getBookNotes(book.id);
 
-    return <BookDetailContent book={book} notes={notes} />;
+    return <BookDetailContent book={book} notes={notes} locale={locale} />;
 }
 
 type BookDetailContentProps = {
     book: Book;
     notes: Awaited<ReturnType<typeof BooksRepository.getBookNotes>>;
+    locale: Locale;
 };
 
-function BookDetailContent({ book, notes }: BookDetailContentProps) {
+function BookDetailContent({ book, notes, locale }: BookDetailContentProps) {
+    const t = booksCopy[locale];
     const finishedAt =
         book.finishedAt !== null
-            ? new Date(book.finishedAt).toLocaleDateString('ru-RU', {
+            ? formatDate(locale, book.finishedAt, {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric',
@@ -47,16 +54,16 @@ function BookDetailContent({ book, notes }: BookDetailContentProps) {
                 <Button asChild variant="ghost" size="sm" className="-ml-2 mb-6 text-muted-foreground hover:text-foreground">
                     <Link href="/">
                         <ArrowLeft className="h-4 w-4" />
-                        Назад к библиотеке
+                        {t.detail.backToLibrary}
                     </Link>
                 </Button>
 
                 <div className="grid gap-8 md:grid-cols-[280px_minmax(0,1fr)]">
                     <BookCover book={book} />
-                    <BookMeta book={book} finishedAt={finishedAt} notesCount={notes.length} />
+                    <BookMeta book={book} finishedAt={finishedAt} notesCount={notes.length} locale={locale} />
                 </div>
 
-                <NotesSection notes={notes} />
+                <NotesSection notes={notes} locale={locale} />
             </SiteContainer>
         </main>
     );
@@ -80,11 +87,14 @@ function BookMeta({
     book,
     finishedAt,
     notesCount,
+    locale,
 }: {
     book: Book;
     finishedAt: string | null;
     notesCount: number;
+    locale: Locale;
 }) {
+    const t = booksCopy[locale];
     return (
         <div className="flex min-w-0 flex-col gap-4">
             <div>
@@ -113,7 +123,7 @@ function BookMeta({
                 )}
 
                 <span className="rounded-full border border-border bg-card/60 px-2.5 py-1 text-xs text-muted-foreground">
-                    {pluralizeNotes(notesCount)}
+                    {pluralizeNotes(locale, notesCount)}
                 </span>
             </div>
 
@@ -138,7 +148,7 @@ function BookMeta({
                 <Button asChild variant="outline" className="w-fit">
                     <a href={book.sourceUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
-                        Открыть в Яндекс.Книгах
+                        {t.detail.openInYandex}
                     </a>
                 </Button>
             )}
@@ -146,11 +156,13 @@ function BookMeta({
     );
 }
 
-function NotesSection({ notes }: { notes: BookDetailContentProps['notes'] }) {
+function NotesSection({ notes, locale }: { notes: BookDetailContentProps['notes']; locale: Locale }) {
+    const t = booksCopy[locale];
+
     return (
         <section className="mt-12">
             <div className="mb-5 flex items-center gap-3">
-                <h2 className="font-heading text-xl font-bold tracking-tight">Заметки</h2>
+                <h2 className="font-heading text-xl font-bold tracking-tight">{t.detail.notesSection}</h2>
                 <span className="rounded-full border border-border bg-card/60 px-2.5 py-0.5 text-xs text-muted-foreground">
                     {notes.length}
                 </span>
@@ -160,7 +172,7 @@ function NotesSection({ notes }: { notes: BookDetailContentProps['notes'] }) {
             {notes.length === 0 ? (
                 <div className="flex min-h-50 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/30 px-6 text-center">
                     <p className="text-sm text-muted-foreground">
-                        Заметок пока нет — добавьте первую через админку (коллекция «Notes»).
+                        {t.detail.notesEmpty}
                     </p>
                 </div>
             ) : (

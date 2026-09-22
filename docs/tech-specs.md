@@ -36,9 +36,45 @@ Docker (`docker-compose.yml`, имя проекта `archive-451-cms`): `main-db
 compose/      books-list.tsx (сервер+Suspense), books-list-view.tsx ('use client'), book-detail.tsx (сервер)
 model/        use-books-view.ts — фильтры, статусы, теги, пагинация, вид
 domain/       book.ts (сущность+статусы), note.ts (сущность+плюрализация), book-filters.ts (чистая логика)
-repository/   books-repository.ts — Payload Local API + маппинг в домен
+repository/   books-repository.ts — Payload Local API + маппинг в домен; getLibraryStats() —
+              счётчики книг/заметок для карточки профиля
 ui/           book-card, book-skeleton, books-filters, books-pagination, note-card, status-badge
 ```
+
+Модуль `src/modules/auth/` — те же слои плюс `actions/`:
+
+```
+compose/      auth-screen.tsx (сервер: общий каркас страниц /auth/*), auth-view.tsx ('use client':
+              карточка, переключатель вход/регистрация), profile-view.tsx (сервер: me() + статистика
+              из BooksRepository.getLibraryStats() → карточка профиля)
+model/        use-auth-view.ts — активная форма (AuthMode: 'login' | 'register')
+domain/       auth.ts — AuthMode, AUTH_MODE_LABELS, AuthFormState (error + success + fieldErrors),
+              SettingsTab, AuthCredentials/SessionCookie, AuthUser
+repository/   auth-repository.ts — payload.login/create/find/auth/forgotPassword/resetPassword/
+              updateByID (Local API), cookie сессии через generatePayloadCookie /
+              generateExpiredPayloadCookie, me() — пользователь сессии, changeEmail()/changePassword()
+ui/           auth-card (каркас карточки: пламя, заголовок, слот контента), login-form, registration-form,
+              forgot-password-form, reset-password-form, form-field (лейбл + иконка + Input + ошибки поля),
+              form-message (плашка error/success), profile-card (статистика + быстрые действия),
+              account-nav (сайдбар ЛК: разделы, «Выйти»), settings-view (вкладки «Почта»/«Пароль»),
+              email-change-form, password-change-form,
+              user-menu (меню ЛК в хедере: email/роль, разделы, «Выйти»)
+actions/      auth.ts — server actions форм: валидация zod → repository → cookie сессии → redirect('/'),
+              forgotPasswordAction / resetPasswordAction (восстановление пароля), logoutAction,
+              changeEmailAction / changePasswordAction (подтверждение текущим паролем через login,
+              перевыпуск cookie, revalidatePath('/', 'layout'))
+```
+
+Сессия — JWT в httpOnly cookie `payload-token`: экшен ставит её через `generatePayloadCookie`
+(атрибуты — как у REST-логина Payload), логаут гасит её через `generateExpiredPayloadCookie`
+(`logoutAction`). Приватные маршруты — группа `(app)/(private)/`: layout делает `AuthRepository.me()`
+и при пустом пользователе редиректит на `/auth`; пользователь передаётся в `SiteHeader` пропсом
+(без клиентского fetch — данные пользователя берутся на сервере). Страницы ЛК (`/profile`,
+`/notes`, `/settings`) лежат в route group `(app)/(private)/(account)/` — layout даёт каркас
+с сайдбаром (`AccountNav`), URL не меняет. Страницы `/auth/*` накрывает
+layout `(app)/auth/layout.tsx` с обратным гардом: авторизованный → `/`. Письмо сброса пароля
+рендерится генераторами в коллекции `users` и уходит через email-адаптер из `payload.config.ts`
+(в dev — консольный адаптер: ссылка с токеном печатается в лог сервера).
 
 ### 2.2 Правила зависимостей
 
@@ -86,11 +122,23 @@ compose → repository
 
 ## 5. Локализация и строки
 
-- Все строки интерфейса — русский, прямо в JSX; словари лейблов — в domain (`BOOK_STATUS_LABELS`, `BOOKS_SORT_OPTIONS`).
-- Идентификаторы (`'want' | 'reading' | 'done'`, `'grid' | 'list'`, ключи сортировки) — английские, не переводятся.
-- Плюрализация — функции в domain (`pluralizeNotes`); даты — `toLocaleDateString('ru-RU')`.
-- `<html lang="ru">` задан в `(app)/layout.tsx`.
-- Второй язык → вынести строки в `domain/i18n.ts`, архитектуру слоёв не менять.
+- Языки: `ru` (по умолчанию) и `en`. Локаль фронта — в cookie `app-locale`; переключение —
+  пунктами «Язык» в меню пользователя (`setLocaleAction`: cookie + `revalidatePath('/', 'layout')`).
+- Инфраструктура — `src/shared/i18n/`: `config.ts` (`Locale`, cookie, `LOCALE_LABELS`),
+  `get-locale.ts` (сервер: cookie → `Locale`), `locale-provider.tsx` (`useLocale()` для
+  клиентских компонентов), `copy.ts` (хедер/тема), `format.ts` (`formatDate`, `pluralForm`).
+- Строки модулей — в `domain/i18n.ts` (`authCopy`, `booksCopy`): ru-объект — источник типов,
+  `Record<Locale, …>` заставляет заполнить `en`; идентификаторы (`'want' | 'reading' | 'done'`,
+  ключи сортировки) — английские, не переводятся.
+- В JSX литеральных строк нет — только из словарей (пропсами от сервера или через `useLocale()`).
+- Серверные экшены берут сообщения из словаря: `authCopy[await getLocale()].messages`.
+- Метаданные страниц — `generateMetadata()` + `meta.*` словаря; `<html lang>` — из `getLocale()`.
+- Плюрализация — `pluralForm(locale, n, { one, few, many })`; даты — `formatDate(locale, date, opts?)`.
+- Админка Payload: `i18n: { supportedLanguages: { ru, en }, fallbackLanguage: 'ru' }` в
+  payload.config; лейблы коллекций/полей — объектами `{ ru, en }`; язык интерфейса переключается
+  в самой админке.
+- Как добавить строку: ключ в ru-объект словаря → tsc потребует его же в en → использование в
+  JSX через `t.*`.
 
 ## 6. Какой код хотим видеть
 

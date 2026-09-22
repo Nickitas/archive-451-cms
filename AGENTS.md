@@ -40,7 +40,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - После изменения коллекций Payload: `pnpm exec payload generate:types` (руками `payload-types.ts` не править).
 - Цвета — только семантические токены (`bg-background`, `text-muted-foreground`…); прямые tailwind-цвета (zinc-/amber-/indigo-…) в модулях запрещены.
 - Серверные async-компоненты живут только в `compose/`; данные тянутся через Payload Local API в `repository/`.
-- Строки интерфейса — на русском, прямо в JSX; идентификаторы — на английском.
+- Строки интерфейса — в словарях `domain/i18n.ts` (ru/en, ru — источник правды; см. `docs/tech-specs.md` §5); идентификаторы — на английском.
 
 ## Что проверять перед завершением
 

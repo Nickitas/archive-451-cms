@@ -50,10 +50,10 @@
 
 ## UI-kit
 
-shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`outline`/`ghost`, `asChild` для Link), Badge, Input, Select, Popover, Sheet (`side="bottom"`), ScrollArea.
+shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`outline`/`ghost`, `asChild` для Link), Badge, Input, Select, Popover, Sheet (`side="bottom"`), ScrollArea, DropdownMenu.
 Новые: `pnpm exec shadcn add <name>`.
 
-Каркас (`@/shared/components/`): `SiteHeader` (h-16, лого `public/logo.svg` — «Архив 451», навигация, ThemeToggle), `SiteNav` (активная ссылка через usePathname), `SiteContainer` (единая сетка), `ThemeProvider`/`ThemeToggle` (next-themes: system по умолчанию).
+Каркас (`@/shared/components/`): `SiteHeader` (h-16, лого `public/logo.svg` — «Архив 451», навигация, ThemeToggle, слот меню пользователя — `UserMenu` из модуля auth, пользователь приходит пропсом из приватного layout), `SiteNav` (активная ссылка через usePathname), `SiteContainer` (единая сетка), `ThemeProvider`/`ThemeToggle` (next-themes: system по умолчанию), `PagePlaceholder` (заглушка раздела в стиле empty-state).
 
 **Айдентика** (отсылка к «451 °F по Фаренгейту» — температуре возгорания бумаги):
 `public/logo.svg` — саламандра, свёрнутая кольцом, с языком пламени в центре (хранитель архива);
@@ -68,6 +68,8 @@ shadcn (стиль radix-luma, `@/shared/components/ui/`): Button (`secondary`/`
 - **Страница книги:** «Назад», сетка `[280px_minmax(0,1fr)]`, мета: статус + оценка + дата + счётчик + теги, описание (`max-w-2xl`), `sourceUrl` → «Открыть в Яндекс.Книгах» (`target="_blank"`), секция «Заметки».
 - **Заметка (NoteCard):** заголовок + дата (ru-RU) + Markdown (`react-markdown` + `remark-gfm`) в `prose prose-sm dark:prose-invert`; ссылки и код — primary.
 - **Пустые состояния:** пунктирная граница, иконка в кольце (primary/70), подсказка, кнопка «Сбросить фильтры».
+- **Экран входа/регистрации (`/auth`):** центрированная карточка `max-w-md rounded-2xl border-border/70 bg-card/60`, пламя в кольце (`bg-primary/10 ring-primary/25`), заголовок-градиент; переключатель форм — две пилюли `rounded-full` (активная — заливка primary, `aria-pressed`); поля — `Input h-10` с иконкой слева и «глазом» для пароля; ошибки — плашка `border-destructive/30 bg-destructive/10`; кнопка отправки `size="lg"` во всю ширину.
+- **Личный кабинет (`/profile`, `/notes`, `/settings`):** двухколоночный каркас route group `(account)`: слева сайдбар-карточка (`rounded-2xl border-border/70 bg-card/60 p-3`, `lg:sticky lg:top-20`; на мобильных — колонкой над контентом), пункты с иконками `h-4 w-4` — активный `bg-accent text-accent-foreground` (`aria-current="page"`), «Выйти» отделён `border-t`; справа — контент колонкой. Вкладки настроек («Почта»/«Пароль») — пилюли `w-fit` с иконками (активная — заливка primary, `aria-pressed`); контент вкладки — карточка-секция `SettingsCard` (иконка в кольце `bg-primary/10 ring-primary/25`, заголовок `font-heading`, описание, контент под `border-t`): у смены почты — строка «Текущая почта» на `bg-muted/60`, у смены пароля — подсказка с `ShieldCheck`; формы ограничены `max-w-sm`. Быстрые действия в карточке профиля — `Button variant="outline" size="sm"` с ссылками на `/settings?tab=…`.
 - **Скелетоны + Suspense** в compose; пагинация: Select 12/24/48 + круглые номера страниц с «…».
 
 ## Доступность

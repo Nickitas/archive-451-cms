@@ -91,4 +91,16 @@ export const BooksRepository = {
 
         return docs.map(toNote);
     },
+
+    // Счётчики для карточки профиля в ЛК
+    async getLibraryStats(): Promise<{ books: number; notes: number }> {
+        const payload = await getAppPayload();
+
+        const [books, notes] = await Promise.all([
+            payload.count({ collection: 'books' }),
+            payload.count({ collection: 'notes' }),
+        ]);
+
+        return { books: books.totalDocs, notes: notes.totalDocs };
+    },
 };
