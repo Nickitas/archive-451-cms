@@ -4,8 +4,6 @@ import { LibrarySkeleton } from '../ui/book-skeleton';
 import { BooksListView } from './books-list-view';
 import { SiteContainer } from '@/shared/components/site-container';
 
-// App-shell: шапка сайта зафиксирована высотой хедера, внутри страницы
-// скроллится только список книг (см. BooksListView)
 export function BooksList() {
     return (
         <main className="relative flex h-[calc(100svh-4rem)] flex-col overflow-hidden bg-background text-foreground">
