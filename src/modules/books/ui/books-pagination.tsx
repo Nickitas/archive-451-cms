@@ -42,7 +42,7 @@ export function BooksPagination({ page, totalPages, pageSize, onPageChange, onPa
     const t = booksCopy[useLocale()];
 
     return (
-        <div className="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{t.pagination.pageSizePrefix}</span>
 

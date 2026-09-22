@@ -56,7 +56,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder={t.filters.searchPlaceholder}
-                    className="h-9 pr-8 pl-9"
+                    className="h-8 pr-8 pl-9"
                 />
                 {search !== '' && (
                     <button
@@ -81,7 +81,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                             onClick={() => toggleStatus(status)}
                             aria-pressed={active}
                             className={cn(
-                                'h-9 rounded-full border px-3 text-xs font-medium whitespace-nowrap transition-colors',
+                                'h-8 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap transition-colors',
                                 active
                                     ? 'border-primary bg-primary text-primary-foreground'
                                     : 'border-border bg-card/50 text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -99,7 +99,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-1.5 border-border bg-card/50 px-3 font-medium text-muted-foreground"
+                            className="h-8 gap-1.5 border-border bg-card/50 px-2.5 font-medium text-muted-foreground"
                         >
                             <Tag className="h-3.5 w-3.5" />
                             {t.filters.tagsLabel}
@@ -142,7 +142,7 @@ export function BooksFilters(props: BooksFiltersProps) {
             )}
 
             <Select value={String(minRating)} onValueChange={(value) => setMinRating(Number(value))}>
-                <SelectTrigger className="h-9 w-36 bg-card/50 text-muted-foreground">
+                <SelectTrigger className="h-8 w-28 bg-card/50 text-muted-foreground">
                     <SelectValue placeholder={t.filters.ratingPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,7 +155,7 @@ export function BooksFilters(props: BooksFiltersProps) {
             </Select>
 
             <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger className="h-9 w-44 bg-card/50 text-muted-foreground">
+                <SelectTrigger className="h-8 w-40 bg-card/50 text-muted-foreground">
                     <SelectValue placeholder={t.filters.sortPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,7 +172,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                     variant="ghost"
                     size="sm"
                     onClick={clearFilters}
-                    className="h-9 px-2.5 text-muted-foreground hover:text-foreground"
+                    className="h-8 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                     <X className="h-4 w-4" />
                     {t.filters.reset}
