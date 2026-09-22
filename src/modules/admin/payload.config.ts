@@ -1,6 +1,8 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
+import { en } from '@payloadcms/translations/languages/en'
+import { ru } from '@payloadcms/translations/languages/ru'
 import path from 'path'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
@@ -26,6 +28,11 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+    // Интерфейс админки: русский по умолчанию, английский — вторым языком
+    i18n: {
+        supportedLanguages: { ru, en },
+        fallbackLanguage: 'ru',
+    },
     admin: {
         user: UserCollection.slug,
         importMap: {

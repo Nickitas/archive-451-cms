@@ -1,6 +1,9 @@
+'use client';
+
 import { cn } from 'cn';
+import { useLocale } from '@/shared/i18n/locale-provider';
+import { booksCopy } from '../domain/i18n';
 import type { BookStatus } from '../domain/book';
-import { BOOK_STATUS_LABELS } from '../domain/book-filters';
 
 const STATUS_STYLES: Record<BookStatus, string> = {
     want: 'border-border bg-muted/60 text-muted-foreground backdrop-blur-md',
@@ -9,6 +12,8 @@ const STATUS_STYLES: Record<BookStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: BookStatus }) {
+    const t = booksCopy[useLocale()];
+
     return (
         <span
             className={cn(
@@ -16,7 +21,7 @@ export function StatusBadge({ status }: { status: BookStatus }) {
                 STATUS_STYLES[status],
             )}
         >
-            {BOOK_STATUS_LABELS[status]}
+            {t.filters.statusLabels[status]}
         </span>
     );
 }

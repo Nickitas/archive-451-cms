@@ -2,23 +2,13 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+import { getLocale } from '@/shared/i18n/get-locale';
 import type { AuthFormState } from '../domain/auth';
+import { authCopy } from '../domain/i18n';
 import { AuthRepository } from '../repository/auth-repository';
-
-const userSchema = z.object({
-    email: z.string().email('Введите корректную почту'),
-    password: z.string().min(8, 'Пароль — минимум 8 символов'),
-});
-
-const emailSchema = z.object({
-    email: z.string().email('Введите корректную почту'),
-});
-
-const resetPasswordSchema = z.object({
-    password: z.string().min(8, 'Пароль — минимум 8 символов'),
-});
 
 // Cookie сессии ставится из экшена — так же, как её ставил бы Payload REST-логин
 async function setSessionCookie(token: string): Promise<void> {
@@ -27,15 +17,22 @@ async function setSessionCookie(token: string): Promise<void> {
 
 /**
  * Авторизация.
- * @param _state 
- * @param formData 
- * @returns 
+ * @param _state
+ * @param formData
+ * @returns
  */
 export async function login(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
-    const validatedFields = userSchema.safeParse({
-        email: formData.get('email'),
-        password: formData.get('password'),
-    });
+    const t = authCopy[await getLocale()];
+
+    const validatedFields = z
+        .object({
+            email: z.string().email(t.messages.invalidEmail),
+            password: z.string().min(8, t.messages.passwordMinLength),
+        })
+        .safeParse({
+            email: formData.get('email'),
+            password: formData.get('password'),
+        });
 
     if (!validatedFields.success) {
         return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
@@ -44,7 +41,7 @@ export async function login(_state: AuthFormState, formData: FormData): Promise<
     const session = await AuthRepository.login(validatedFields.data);
 
     if (!session) {
-        return { error: 'Неверная почта или пароль.' };
+        return { error: t.messages.wrongCredentials };
     }
 
     await setSessionCookie(session.token);
@@ -52,16 +49,23 @@ export async function login(_state: AuthFormState, formData: FormData): Promise<
 }
 
 /**
- * Регистрация. 
- * @param _state 
- * @param formData 
- * @returns 
+ * Регистрация.
+ * @param _state
+ * @param formData
+ * @returns
  */
 export async function register(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
-    const validatedFields = userSchema.safeParse({
-        email: formData.get('email'),
-        password: formData.get('password'),
-    });
+    const t = authCopy[await getLocale()];
+
+    const validatedFields = z
+        .object({
+            email: z.string().email(t.messages.invalidEmail),
+            password: z.string().min(8, t.messages.passwordMinLength),
+        })
+        .safeParse({
+            email: formData.get('email'),
+            password: formData.get('password'),
+        });
 
     if (!validatedFields.success) {
         return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
@@ -70,17 +74,17 @@ export async function register(_state: AuthFormState, formData: FormData): Promi
     const passwordConfirm = String(formData.get('passwordConfirm') ?? '');
 
     if (passwordConfirm !== validatedFields.data.password) {
-        return { fieldErrors: { passwordConfirm: ['Пароли не совпадают'] } };
+        return { fieldErrors: { passwordConfirm: [t.messages.passwordsMismatch] } };
     }
 
     const session = await AuthRepository.register(validatedFields.data);
 
     if (session === 'email-taken') {
-        return { fieldErrors: { email: ['Пользователь с такой почтой уже зарегистрирован.'] } };
+        return { fieldErrors: { email: [t.messages.emailTaken] } };
     }
 
     if (!session) {
-        return { error: 'Не удалось зарегистрироваться. Попробуйте ещё раз.' };
+        return { error: t.messages.registerFailed };
     }
 
     await setSessionCookie(session.token);
@@ -94,43 +98,151 @@ export async function logoutAction(): Promise<void> {
 }
 
 /**
- * Забыл пароль. 
- * @param _state 
- * @param formData 
+ * Забыл пароль.
+ * @param _state
+ * @param formData
  * @returns success
  */
 export async function forgotPasswordAction(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
-    const validatedFields = emailSchema.safeParse({ email: formData.get('email') });
+    const t = authCopy[await getLocale()];
+
+    const validatedFields = z
+        .object({ email: z.string().email(t.messages.invalidEmail) })
+        .safeParse({ email: formData.get('email') });
+
     if (!validatedFields.success) {
         return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
     }
+
     await AuthRepository.requestPasswordReset(validatedFields.data.email);
-    return { success: 'Если почта зарегистрирована, письмо со ссылкой уже отправлено.' };
+
+    return { success: t.messages.forgotSent };
 }
 
 /**
- * Сброс пароля по ссылке. 
- * @param _state 
- * @param formData 
+ * Сброс пароля по ссылке.
+ * @param _state
+ * @param formData
  * @returns success
  */
 export async function resetPasswordAction(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+    const t = authCopy[await getLocale()];
     const token = String(formData.get('token') ?? '');
 
-    const validatedFields = resetPasswordSchema.safeParse({ password: formData.get('password') });
+    const validatedFields = z
+        .object({ password: z.string().min(8, t.messages.passwordMinLength) })
+        .safeParse({ password: formData.get('password') });
+
     if (!validatedFields.success) {
         return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
     }
 
     const passwordConfirm = String(formData.get('passwordConfirm') ?? '');
     if (passwordConfirm !== validatedFields.data.password) {
-        return { fieldErrors: { passwordConfirm: ['Пароли не совпадают'] } };
+        return { fieldErrors: { passwordConfirm: [t.messages.passwordsMismatch] } };
     }
 
     const session = await AuthRepository.resetPassword({ token, password: validatedFields.data.password });
     if (!session) {
-        return { error: 'Ссылка недействительна или устарела. Запросите сброс ещё раз.' };
+        return { error: t.messages.resetInvalid };
     }
+
     await setSessionCookie(session.token);
     redirect('/');
+}
+
+/**
+ * Смена почты в настройках; текущий пароль подтверждаем входом.
+ */
+export async function changeEmailAction(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+    const t = authCopy[await getLocale()];
+
+    const validatedFields = z
+        .object({
+            email: z.string().email(t.messages.invalidEmail),
+            currentPassword: z.string().min(1, t.messages.currentPasswordRequired),
+        })
+        .safeParse({
+            email: formData.get('email'),
+            currentPassword: formData.get('currentPassword'),
+        });
+
+    if (!validatedFields.success) {
+        return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
+    }
+
+    const user = await AuthRepository.me();
+    if (!user) {
+        return { error: t.messages.sessionExpired };
+    }
+
+    const verified = await AuthRepository.login({ email: user.email, password: validatedFields.data.currentPassword });
+    if (!verified) {
+        return { fieldErrors: { currentPassword: [t.messages.wrongCurrentPassword] } };
+    }
+
+    const updated = await AuthRepository.changeEmail({ userId: user.id, email: validatedFields.data.email });
+    if (updated === 'email-taken') {
+        return { fieldErrors: { email: [t.messages.emailTaken] } };
+    }
+    if (!updated) {
+        return { error: t.messages.emailChangeFailed };
+    }
+
+    // Перевыпускаем cookie: в JWT зашита почта, она должна стать новой
+    const session = await AuthRepository.login({ email: updated.email, password: validatedFields.data.currentPassword });
+    if (session) {
+        await setSessionCookie(session.token);
+    }
+    revalidatePath('/', 'layout');
+    return { success: t.messages.emailChanged };
+}
+
+/**
+ * Смена пароля в настройках; текущий пароль подтверждаем входом.
+ */
+export async function changePasswordAction(_state: AuthFormState, formData: FormData): Promise<AuthFormState> {
+    const t = authCopy[await getLocale()];
+
+    const validatedFields = z
+        .object({
+            password: z.string().min(8, t.messages.passwordMinLength),
+            currentPassword: z.string().min(1, t.messages.currentPasswordRequired),
+        })
+        .safeParse({
+            password: formData.get('password'),
+            currentPassword: formData.get('currentPassword'),
+        });
+
+    if (!validatedFields.success) {
+        return { fieldErrors: z.flattenError(validatedFields.error).fieldErrors };
+    }
+
+    const passwordConfirm = String(formData.get('passwordConfirm') ?? '');
+    if (passwordConfirm !== validatedFields.data.password) {
+        return { fieldErrors: { passwordConfirm: [t.messages.passwordsMismatch] } };
+    }
+
+    const user = await AuthRepository.me();
+    if (!user) {
+        return { error: t.messages.sessionExpired };
+    }
+
+    const verified = await AuthRepository.login({ email: user.email, password: validatedFields.data.currentPassword });
+    if (!verified) {
+        return { fieldErrors: { currentPassword: [t.messages.wrongCurrentPassword] } };
+    }
+
+    const saved = await AuthRepository.changePassword({ userId: user.id, password: validatedFields.data.password });
+    if (!saved) {
+        return { error: t.messages.passwordChangeFailed };
+    }
+
+    // Перевыпускаем cookie уже под новым паролем
+    const session = await AuthRepository.login({ email: user.email, password: validatedFields.data.password });
+    if (session) {
+        await setSessionCookie(session.token);
+    }
+    revalidatePath('/', 'layout');
+    return { success: t.messages.passwordChanged };
 }

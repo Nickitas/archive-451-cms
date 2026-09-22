@@ -10,18 +10,8 @@ export type BooksViewMode = 'grid' | 'list';
 
 export type BooksSort = 'title-asc' | 'rating-desc' | 'finished-desc' | 'added-desc';
 
-export const BOOKS_SORT_OPTIONS: { value: BooksSort; label: string }[] = [
-    { value: 'title-asc', label: 'Название А–Я' },
-    { value: 'rating-desc', label: 'Высокий рейтинг' },
-    { value: 'finished-desc', label: 'Недавно прочитанные' },
-    { value: 'added-desc', label: 'Недавно добавленные' },
-];
-
-export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
-    want: 'Хочу прочитать',
-    reading: 'Читаю',
-    done: 'Прочитана',
-};
+// Порядок сортировок для UI; лейблы — в domain/i18n.ts
+export const BOOKS_SORT_ORDER: BooksSort[] = ['title-asc', 'rating-desc', 'finished-desc', 'added-desc'];
 
 export type BooksFilters = {
     search: string;

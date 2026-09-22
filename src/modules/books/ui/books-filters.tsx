@@ -6,12 +6,9 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import {
-    BOOKS_SORT_OPTIONS,
-    BOOK_STATUS_LABELS,
-    BOOK_STATUS_ORDER,
-    type BooksSort,
-} from '../domain/book-filters';
+import { useLocale } from '@/shared/i18n/locale-provider';
+import { BOOKS_SORT_ORDER, BOOK_STATUS_ORDER, type BooksSort } from '../domain/book-filters';
+import { booksCopy } from '../domain/i18n';
 import type { BookStatus } from '../domain/book';
 
 const RATING_OPTIONS = [0, 4, 5, 6, 7, 8, 9];
@@ -49,6 +46,8 @@ export function BooksFilters(props: BooksFiltersProps) {
         hasFilters,
     } = props;
 
+    const t = booksCopy[useLocale()];
+
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-52 flex-1">
@@ -56,14 +55,14 @@ export function BooksFilters(props: BooksFiltersProps) {
                 <Input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Название или автор…"
+                    placeholder={t.filters.searchPlaceholder}
                     className="h-9 pr-8 pl-9"
                 />
                 {search !== '' && (
                     <button
                         type="button"
                         onClick={() => setSearch('')}
-                        aria-label="Очистить поиск"
+                        aria-label={t.filters.clearSearchAria}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <X className="h-4 w-4" />
@@ -88,7 +87,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                                     : 'border-border bg-card/50 text-muted-foreground hover:bg-muted hover:text-foreground',
                             )}
                         >
-                            {BOOK_STATUS_LABELS[status]}
+                            {t.filters.statusLabels[status]}
                         </button>
                     );
                 })}
@@ -103,7 +102,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                             className="h-9 gap-1.5 border-border bg-card/50 px-3 font-medium text-muted-foreground"
                         >
                             <Tag className="h-3.5 w-3.5" />
-                            Теги
+                            {t.filters.tagsLabel}
                             {selectedTags.length > 0 && (
                                 <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                                     {selectedTags.length}
@@ -114,7 +113,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                     </PopoverTrigger>
                     <PopoverContent align="start" className="w-72 p-3">
                         <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                            Теги
+                            {t.filters.tagsLabel}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                             {tags.map((tag) => {
@@ -144,12 +143,12 @@ export function BooksFilters(props: BooksFiltersProps) {
 
             <Select value={String(minRating)} onValueChange={(value) => setMinRating(Number(value))}>
                 <SelectTrigger className="h-9 w-36 bg-card/50 text-muted-foreground">
-                    <SelectValue placeholder="Рейтинг" />
+                    <SelectValue placeholder={t.filters.ratingPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
                     {RATING_OPTIONS.map((rating) => (
                         <SelectItem key={rating} value={String(rating)}>
-                            {rating === 0 ? 'Любой рейтинг' : `от ${rating} и выше`}
+                            {rating === 0 ? t.filters.ratingAny : t.filters.ratingFrom(rating)}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -157,12 +156,12 @@ export function BooksFilters(props: BooksFiltersProps) {
 
             <Select value={sort} onValueChange={setSort}>
                 <SelectTrigger className="h-9 w-44 bg-card/50 text-muted-foreground">
-                    <SelectValue placeholder="Сортировка" />
+                    <SelectValue placeholder={t.filters.sortPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
-                    {BOOKS_SORT_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                    {BOOKS_SORT_ORDER.map((option) => (
+                        <SelectItem key={option} value={option}>
+                            {t.filters.sortLabels[option]}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -176,7 +175,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                     className="h-9 px-2.5 text-muted-foreground hover:text-foreground"
                 >
                     <X className="h-4 w-4" />
-                    Сбросить
+                    {t.filters.reset}
                 </Button>
             )}
         </div>

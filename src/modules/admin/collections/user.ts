@@ -3,6 +3,10 @@ import { isAdmin } from '../access/is-admin';
 
 export const UserCollection: CollectionConfig = {
     slug: 'users',
+    labels: {
+        singular: { ru: 'Пользователь', en: 'User' },
+        plural: { ru: 'Пользователи', en: 'Users' },
+    },
     auth: {
         forgotPassword: {
             generateEmailSubject: () => 'Архив 451 — сброс пароля',
@@ -26,7 +30,11 @@ export const UserCollection: CollectionConfig = {
         {
             name: 'role',
             type: 'select',
-            options: ['admin', 'user'],
+            label: { ru: 'Роль', en: 'Role' },
+            options: [
+                { label: { ru: 'Администратор', en: 'Administrator' }, value: 'admin' },
+                { label: { ru: 'Читатель', en: 'Reader' }, value: 'user' },
+            ],
             defaultValue: 'user',
             required: true,
             saveToJWT: true,

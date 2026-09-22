@@ -3,6 +3,9 @@ import { Geist_Mono, Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/shared/components/site-header";
 import { ThemeProvider } from "@/shared/components/theme-provider";
+import { getLocale } from "@/shared/i18n/get-locale";
+import { LocaleProvider } from "@/shared/i18n/locale-provider";
+import { sharedCopy } from "@/shared/i18n/copy";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -19,18 +22,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Архив 451 — библиотека",
-    template: "%s · Архив 451",
-  },
-  description: "Личная библиотека: книги, заметки и рейтинги",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+  return {
+    title: {
+      default: "Архив 451 — библиотека",
+      template: "%s · Архив 451",
+    },
+    description: sharedCopy[locale].description,
+  };
+}
+
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="ru"
+      lang={locale}
       className={`${inter.variable} ${manrope.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -41,7 +50,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <LocaleProvider locale={locale}>
+            {children}
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

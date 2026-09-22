@@ -168,4 +168,58 @@ export const AuthRepository = {
 
         return AuthRepository.login({ email, password });
     },
+
+    /**
+     * Смена почты.
+     * @returns 'email-taken' — почта уже занята, null — прочая ошибка
+     * @returns обновлённый пользователь.
+     */
+    async changeEmail({ userId, email }: { userId: number; email: string }): Promise<AuthUser | 'email-taken' | null> {
+        const payload = await getAppPayload();
+
+        const existing = await payload.find({
+            collection: 'users',
+            depth: 0,
+            limit: 1,
+            where: {
+                and: [{ email: { equals: email.toLowerCase() } }, { id: { not_equals: userId } }],
+            },
+        });
+
+        if (existing.docs.length > 0) {
+            return 'email-taken';
+        }
+
+        try {
+            const updated = await payload.update({
+                collection: 'users',
+                id: userId,
+                data: { email },
+            });
+
+            return { id: updated.id, email: updated.email, role: updated.role, createdAt: updated.createdAt };
+        } catch {
+            return null;
+        }
+    },
+
+    /**
+     * Смена пароля (Payload хеширует сам).
+     * @returns false — не удалось сохранить.
+     */
+    async changePassword({ userId, password }: { userId: number; password: string }): Promise<boolean> {
+        const payload = await getAppPayload();
+
+        try {
+            await payload.update({
+                collection: 'users',
+                id: userId,
+                data: { password },
+            });
+
+            return true;
+        } catch {
+            return false;
+        }
+    },
 };

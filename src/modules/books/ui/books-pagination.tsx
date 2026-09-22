@@ -3,7 +3,9 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import { useLocale } from '@/shared/i18n/locale-provider';
 import { PAGE_SIZES } from '../domain/book-filters';
+import { booksCopy } from '../domain/i18n';
 
 type PageNumberItem = { page: number } | { ellipsis: true; index: number };
 
@@ -37,10 +39,12 @@ type BooksPaginationProps = {
 };
 
 export function BooksPagination({ page, totalPages, pageSize, onPageChange, onPageSizeChange }: BooksPaginationProps) {
+    const t = booksCopy[useLocale()];
+
     return (
         <div className="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Показывать</span>
+                <span className="text-xs text-muted-foreground">{t.pagination.pageSizePrefix}</span>
 
                 <Select value={String(pageSize)} onValueChange={onPageSizeChange}>
                     <SelectTrigger className="h-8 w-20 bg-card/50 text-xs">
@@ -55,12 +59,12 @@ export function BooksPagination({ page, totalPages, pageSize, onPageChange, onPa
                     </SelectContent>
                 </Select>
 
-                <span className="text-xs text-muted-foreground">на странице</span>
+                <span className="text-xs text-muted-foreground">{t.pagination.pageSizeSuffix}</span>
             </div>
 
             <div className="flex items-center justify-between gap-4">
                 <span className="text-xs text-muted-foreground">
-                    Страница {page} из {totalPages}
+                    {t.pagination.pageInfo(page, totalPages)}
                 </span>
 
                 <div className="flex items-center gap-1.5">

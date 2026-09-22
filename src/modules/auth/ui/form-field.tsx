@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
+import { useLocale } from '@/shared/i18n/locale-provider';
+import { authCopy } from '../domain/i18n';
 
 type FormFieldProps = {
     id: string;
@@ -17,6 +19,7 @@ type FormFieldProps = {
 };
 
 export function FormField({ id, name, label, type, icon: Icon, placeholder, autoComplete, errors }: FormFieldProps) {
+    const t = authCopy[useLocale()];
     const [visible, setVisible] = useState(false);
     const isPassword = type === 'password';
     const hasErrors = errors !== undefined && errors.length > 0;
@@ -42,7 +45,7 @@ export function FormField({ id, name, label, type, icon: Icon, placeholder, auto
                     <button
                         type="button"
                         onClick={() => setVisible((current) => !current)}
-                        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
+                        aria-label={visible ? t.field.hidePassword : t.field.showPassword}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                     >
                         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

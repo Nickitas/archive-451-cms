@@ -1,7 +1,9 @@
 'use client';
 
 import { cn } from 'cn';
-import { AUTH_MODE_LABELS, type AuthMode } from '../domain/auth';
+import { useLocale } from '@/shared/i18n/locale-provider';
+import type { AuthMode } from '../domain/auth';
+import { authCopy } from '../domain/i18n';
 import { useAuthView } from '../model/use-auth-view';
 import { LoginForm } from '../ui/login-form';
 import { RegistrationForm } from '../ui/registration-form';
@@ -9,20 +11,15 @@ import { AuthCard } from '../ui/auth-card';
 
 const AUTH_MODES: AuthMode[] = ['login', 'register'];
 
-const AUTH_SCREEN_COPY: Record<AuthMode, { title: string; subtitle: string }> = {
-    login: {
-        title: 'С возвращением',
-        subtitle: 'Войдите, чтобы вернуться к своим книгам и заметкам.',
-    },
-    register: {
-        title: 'Создайте аккаунт',
-        subtitle: 'Ведите дневник чтения: книги, заметки и рейтинги в одном месте.',
-    },
-};
-
 export function AuthView() {
+    const locale = useLocale();
+    const t = authCopy[locale];
     const { mode, setMode } = useAuthView();
-    const copy = AUTH_SCREEN_COPY[mode];
+
+    const copy =
+        mode === 'login'
+            ? { title: t.screen.loginTitle, subtitle: t.screen.loginSubtitle }
+            : { title: t.screen.registerTitle, subtitle: t.screen.registerSubtitle };
 
     return (
         <AuthCard
@@ -31,7 +28,7 @@ export function AuthView() {
         >
             <div
                 role="group"
-                aria-label="Вход или регистрация"
+                aria-label={t.screen.toggleAria}
                 className="mt-6 grid grid-cols-2 rounded-full border border-border/70 bg-muted/60 p-1"
             >
                 {AUTH_MODES.map((item) => {
@@ -50,7 +47,7 @@ export function AuthView() {
                                     : 'text-muted-foreground hover:text-foreground',
                             )}
                         >
-                            {AUTH_MODE_LABELS[item]}
+                            {item === 'login' ? t.screen.tabLogin : t.screen.tabRegister}
                         </button>
                     );
                 })}

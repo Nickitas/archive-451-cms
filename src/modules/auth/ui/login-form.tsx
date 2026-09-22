@@ -3,7 +3,9 @@
 import { useActionState } from 'react';
 import { LoaderCircle, Lock, Mail } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { useLocale } from '@/shared/i18n/locale-provider';
 import { AUTH_FORM_STATE_INITIAL, type AuthFormState } from '../domain/auth';
+import { authCopy } from '../domain/i18n';
 import { login } from '../actions/auth';
 import { FormMessage } from './form-message';
 import { FormField } from './form-field';
@@ -14,6 +16,8 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ onSwitchMode }: LoginFormProps) {
+    const locale = useLocale();
+    const t = authCopy[locale];
     const [state, action, pending] = useActionState<AuthFormState, FormData>(login, AUTH_FORM_STATE_INITIAL);
 
     return (
@@ -21,10 +25,10 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
             <FormField
                 id="login-email"
                 name="email"
-                label="Почта"
+                label={t.field.emailLabel}
                 type="email"
                 icon={Mail}
-                placeholder="you@example.com"
+                placeholder={t.field.emailPlaceholder}
                 autoComplete="email"
                 errors={state.fieldErrors?.email}
             />
@@ -32,29 +36,29 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
             <FormField
                 name="password"
                 id="login-password"
-                label="Пароль"
+                label={t.field.passwordLabel}
                 type="password"
                 icon={Lock}
-                placeholder="••••••••"
+                placeholder={t.field.passwordPlaceholder}
                 autoComplete="current-password"
                 errors={state.fieldErrors?.password}
             />
 
             <Button type="submit" size="lg" disabled={pending} className="mt-1 w-full">
                 {pending && <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />}
-                {pending ? 'Входим…' : 'Войти'}
+                {pending ? t.form.loginPending : t.form.loginSubmit}
             </Button>
 
             {state.error && <FormMessage status='error' message={state.error} />}
 
             <p className="text-center text-sm text-muted-foreground">
-                Нет аккаунта?{' '}
+                {t.screen.toRegisterPrompt}{' '}
                 <button
                     type="button"
                     onClick={onSwitchMode}
                     className="font-medium text-primary underline-offset-4 transition-colors hover:underline"
                 >
-                    Зарегистрируйтесь
+                    {t.screen.toRegister}
                 </button>
             </p>
             <p className="text-center">
@@ -62,7 +66,7 @@ export function LoginForm({ onSwitchMode }: LoginFormProps) {
                     href="/auth/forgot-password"
                     className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
-                    Забыли пароль?
+                    {t.screen.forgotLink}
                 </Link>
             </p>
         </form>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BookOpen, ChevronRight, Star } from 'lucide-react';
 import { cn } from 'cn';
+import { useLocale } from '@/shared/i18n/locale-provider';
 import type { Book } from '../domain/book';
 import { pluralizeNotes } from '../domain/note';
 import { StatusBadge } from './status-badge';
@@ -13,6 +14,7 @@ type BookCardProps = {
 };
 
 export function BookCard({ book, view }: BookCardProps) {
+    const locale = useLocale();
     const isList = view === 'list';
     const maxTags = isList ? 4 : 2;
 
@@ -77,7 +79,7 @@ export function BookCard({ book, view }: BookCardProps) {
                             {book.notesCount > 0 && (
                                 <span className="inline-flex items-center gap-1">
                                     <BookOpen className="h-3 w-3" />
-                                    {pluralizeNotes(book.notesCount)}
+                                    {pluralizeNotes(locale, book.notesCount)}
                                 </span>
                             )}
                         </p>
@@ -121,7 +123,7 @@ export function BookCard({ book, view }: BookCardProps) {
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                             <BookOpen className="h-3 w-3" />
-                            {pluralizeNotes(book.notesCount)}
+                            {pluralizeNotes(locale, book.notesCount)}
                         </span>
 
                         {book.tags.slice(0, maxTags).map((tag) => (
