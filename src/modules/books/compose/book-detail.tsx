@@ -6,6 +6,7 @@ import { SiteContainer } from '@/shared/components/site-container';
 import { getLocale } from '@/shared/i18n/get-locale';
 import { formatDate } from '@/shared/i18n/format';
 import type { Locale } from '@/shared/i18n/config';
+import { AuthRepository } from '@/modules/auth/repository/auth-repository';
 import type { Book } from '../domain/book';
 import { booksCopy } from '../domain/i18n';
 import { pluralizeNotes } from '../domain/note';
@@ -14,14 +15,21 @@ import { NoteCard } from '../ui/note-card';
 import { StatusBadge } from '../ui/status-badge';
 
 export async function BookDetail({ id }: { id: number }) {
-    const book = await BooksRepository.getBook(id);
+    const user = await AuthRepository.me();
+
+    // Чужая или не существующая книга → 404 (owner-фильтр в access-слое)
+    if (user === null) {
+        notFound();
+    }
+
+    const book = await BooksRepository.getBook(id, user.id);
 
     if (book === null) {
         notFound();
     }
 
     const locale = await getLocale();
-    const notes = await BooksRepository.getBookNotes(book.id);
+    const notes = await BooksRepository.getBookNotes(book.id, user.id);
 
     return <BookDetailContent book={book} notes={notes} locale={locale} />;
 }

@@ -172,6 +172,7 @@ export interface Media {
  */
 export interface Book {
   id: number;
+  owner: number | User;
   title: string;
   author?: string | null;
   description?: string | null;
@@ -180,6 +181,7 @@ export interface Book {
   status?: ('want' | 'reading' | 'done') | null;
   rating?: number | null;
   finishedAt?: string | null;
+  isPublic?: boolean | null;
   tags?:
     | {
         tag: string;
@@ -329,6 +331,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "books_select".
  */
 export interface BooksSelect<T extends boolean = true> {
+  owner?: T;
   title?: T;
   author?: T;
   description?: T;
@@ -337,6 +340,7 @@ export interface BooksSelect<T extends boolean = true> {
   status?: T;
   rating?: T;
   finishedAt?: T;
+  isPublic?: T;
   tags?:
     | T
     | {

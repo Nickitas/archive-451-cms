@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { AuthRepository } from '@/modules/auth/repository/auth-repository';
 import { BooksRepository } from '../repository/books-repository';
 import { LibrarySkeleton } from '../ui/book-skeleton';
 import { BooksListView } from './books-list-view';
@@ -22,7 +23,8 @@ export function BooksList() {
 }
 
 async function BooksListData() {
-    const books = await BooksRepository.getAllBooks();
+    const user = await AuthRepository.me();
+    const books = user === null ? [] : await BooksRepository.getAllBooks(user.id);
 
     return <BooksListView books={books} />;
 }

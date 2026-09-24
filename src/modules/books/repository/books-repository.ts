@@ -18,6 +18,7 @@ function toBook(doc: BookDoc, notesCount: number): Book {
         finishedAt: doc.finishedAt ?? null,
         tags: (doc.tags ?? []).map((tag) => tag.tag),
         notesCount,
+        isPublic: doc.isPublic ?? true,
     };
 }
 
@@ -31,13 +32,15 @@ function toNote(doc: NoteDoc): Note {
     };
 }
 
-async function countNotesByBookId(): Promise<Map<number, number>> {
+async function countNotesByBookId(userId: number): Promise<Map<number, number>> {
     const payload = await getAppPayload();
 
     const { docs } = await payload.find({
         collection: 'notes',
         depth: 0,
         limit: 0,
+        user: { id: userId },
+        overrideAccess: false,
     });
 
     const counts = new Map<number, number>();
@@ -49,36 +52,48 @@ async function countNotesByBookId(): Promise<Map<number, number>> {
     return counts;
 }
 
+// Пользователь для access-проверок: без роли, чтобы админ на фронте видел только свою библиотеку
+function toRequestUser(userId: number): { id: number } {
+    return { id: userId };
+}
+
 export const BooksRepository = {
-    async getAllBooks(): Promise<Book[]> {
+    async getAllBooks(userId: number): Promise<Book[]> {
         const payload = await getAppPayload();
 
         const { docs } = await payload.find({
             collection: 'books',
             limit: 0,
             sort: 'title',
+            user: toRequestUser(userId),
+            overrideAccess: false,
         });
 
-        const noteCounts = await countNotesByBookId();
+        const noteCounts = await countNotesByBookId(userId);
 
         return docs.map((doc) => toBook(doc, noteCounts.get(doc.id) ?? 0));
     },
 
-    async getBook(id: number): Promise<Book | null> {
+    async getBook(id: number, userId: number): Promise<Book | null> {
         const payload = await getAppPayload();
 
         let doc: BookDoc;
         try {
-            doc = await payload.findByID({ collection: 'books', id });
+            doc = await payload.findByID({
+                collection: 'books',
+                id,
+                user: toRequestUser(userId),
+                overrideAccess: false,
+            });
         } catch {
             return null;
         }
 
-        const noteCounts = await countNotesByBookId();
+        const noteCounts = await countNotesByBookId(userId);
         return toBook(doc, noteCounts.get(doc.id) ?? 0);
     },
 
-    async getBookNotes(bookId: number): Promise<Note[]> {
+    async getBookNotes(bookId: number, userId: number): Promise<Note[]> {
         const payload = await getAppPayload();
 
         const { docs } = await payload.find({
@@ -87,18 +102,28 @@ export const BooksRepository = {
             limit: 0,
             where: { book: { equals: bookId } },
             sort: '-createdAt',
+            user: toRequestUser(userId),
+            overrideAccess: false,
         });
 
         return docs.map(toNote);
     },
 
     // Счётчики для карточки профиля в ЛК
-    async getLibraryStats(): Promise<{ books: number; notes: number }> {
+    async getLibraryStats(userId: number): Promise<{ books: number; notes: number }> {
         const payload = await getAppPayload();
 
         const [books, notes] = await Promise.all([
-            payload.count({ collection: 'books' }),
-            payload.count({ collection: 'notes' }),
+            payload.count({
+                collection: 'books',
+                user: toRequestUser(userId),
+                overrideAccess: false,
+            }),
+            payload.count({
+                collection: 'notes',
+                user: toRequestUser(userId),
+                overrideAccess: false,
+            }),
         ]);
 
         return { books: books.totalDocs, notes: notes.totalDocs };

@@ -14,4 +14,6 @@ export type Book = {
     finishedAt: string | null;
     tags: string[];
     notesCount: number;
+    // Публичная книга: её заметки видны в общей ленте на /
+    isPublic: boolean;
 };

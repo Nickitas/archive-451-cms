@@ -36,9 +36,22 @@ Docker (`docker-compose.yml`, имя проекта `archive-451-cms`): `main-db
 compose/      books-list.tsx (сервер+Suspense), books-list-view.tsx ('use client'), book-detail.tsx (сервер)
 model/        use-books-view.ts — фильтры, статусы, теги, пагинация, вид
 domain/       book.ts (сущность+статусы), note.ts (сущность+плюрализация), book-filters.ts (чистая логика)
-repository/   books-repository.ts — Payload Local API + маппинг в домен; getLibraryStats() —
-              счётчики книг/заметок для карточки профиля
+repository/   books-repository.ts — Payload Local API + маппинг в домен; все методы принимают
+              userId и зовут операции с `user: { id }` + `overrideAccess: false` — фильтрацию
+              делает access-слой коллекций; getLibraryStats() — счётчики для профиля
 ui/           book-card, book-skeleton, books-filters, books-pagination, note-card, status-badge
+```
+
+Модуль `src/modules/feed/` — лента заметок из публичных книг всех пользователей (`/`).
+Запрос заметок идёт с `overrideAccess: true` (намеренный обход личного скоупа) и жёстким
+`where: { 'book.isPublic': equals true }` — приватность обеспечивает фильтр, а не access.
+У книги есть `isPublic` (checkbox, default true): приватная книга скрывает свои заметки из ленты.
+
+```
+compose/      notes-feed.tsx (сервер)
+domain/       feed.ts (FeedItem + excerptFromMarkdown), i18n.ts (feedCopy)
+repository/   feed-repository.ts — getFeed(): notes по book.isPublic, depth 2, sort -createdAt
+ui/           note-feed-card.tsx (сервер)
 ```
 
 Модуль `src/modules/auth/` — те же слои плюс `actions/`:
@@ -75,6 +88,15 @@ actions/      auth.ts — server actions форм: валидация zod → re
 layout `(app)/auth/layout.tsx` с обратным гардом: авторизованный → `/`. Письмо сброса пароля
 рендерится генераторами в коллекции `users` и уходит через email-адаптер из `payload.config.ts`
 (в dev — консольный адаптер: ссылка с токеном печатается в лог сервера).
+
+Библиотеки личные: книга несёт обязательное `owner` (relationship → `users`, проставляется
+хуком `beforeChange` при create), access-функции `books`/`notes` дают админу всё, остальным
+авторизованным — ограничение `{ owner: equals user.id }` / `{ 'book.owner': equals }`; заметка
+создаётся только в своей книге (create-access проверяет через `payload.count`). Local API на
+фронте зовётся с `user: { id }` и `overrideAccess: false` — роль не пробрасывается, поэтому
+админ на фронте видит только свою библиотеку (в `/admin` с JWT-сессией — все книги). Сев моков:
+`seedMockBooksForFirstUser` в onInit (первому пользователю; без пользователей — пропуск) и
+повторно при первой регистрации в `AuthRepository.register`.
 
 ### 2.2 Правила зависимостей
 

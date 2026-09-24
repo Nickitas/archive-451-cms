@@ -8,12 +8,12 @@ import { useLocale } from '@/shared/i18n/locale-provider';
 import { authCopy } from '../domain/i18n';
 import { logoutAction } from '../actions/auth';
 
-// Разделы личного кабинета; «Библиотека» — точное совпадение, остальные — по префиксу
+// Разделы личного кабинета; активность — по префиксу пути
 const ACCOUNT_SECTIONS = [
     { href: '/profile', key: 'profile', icon: UserRound },
     { href: '/notes', key: 'notes', icon: NotebookText },
     { href: '/settings', key: 'settings', icon: Settings },
-    { href: '/', key: 'library', icon: BookOpen },
+    { href: '/library', key: 'library', icon: BookOpen },
 ] as const;
 
 export function AccountNav() {
@@ -28,7 +28,7 @@ export function AccountNav() {
         >
             <ul className="flex flex-col gap-1">
                 {ACCOUNT_SECTIONS.map((item) => {
-                    const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                    const active = pathname.startsWith(item.href);
 
                     return (
                         <li key={item.href}>

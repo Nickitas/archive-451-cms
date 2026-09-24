@@ -10,7 +10,7 @@ import { UserCollection } from './collections/user'
 import { MediaCollection } from './collections/media'
 import { BooksCollection } from './collections/books'
 import { NotesCollection } from './collections/notes'
-import { seedMockBooks } from './seed/mock-books'
+import { seedMockBooksForFirstUser } from './seed/mock-books'
 
 import type { EmailAdapter } from 'payload';
 
@@ -54,6 +54,6 @@ export default buildConfig({
     sharp,
     plugins: [],
     onInit: async (payload) => {
-        await seedMockBooks(payload)
+        await seedMockBooksForFirstUser(payload)
     },
 })

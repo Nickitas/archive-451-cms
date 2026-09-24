@@ -23,6 +23,8 @@ type MockBook = {
     finishedAt?: string
     sourceUrl?: string
     tags: { tag: string }[]
+    /** Публичная книга: заметки видны в общей ленте (по умолчанию — да). */
+    isPublic?: boolean
     /** Файл обложки из media/ — опционален; без него карточка покажет заглушку. */
     coverFile?: string
     /** Заметки к книге (Markdown, GFM) — создаются вместе с книгой. */
@@ -185,6 +187,7 @@ const MOCK_BOOKS: MockBook[] = [
         status: 'done',
         rating: 8,
         finishedAt: '2026-08-12T00:00:00.000Z',
+        isPublic: false,
         tags: [{ tag: 'Мистика' }, { tag: 'Готика' }, { tag: 'Классика' }],
         coverFile: 'golem.jpg',
         notes: [
@@ -277,6 +280,7 @@ const MOCK_BOOKS: MockBook[] = [
         description:
             'Рассказ-эссе о самой страшной фобии XIX века — тафэфобии, страхе быть похороненным заживо. По собирает медицинские случаи, размышляет о признаках мнимой смерти и строит из документальности чистый психологический ужас.',
         status: 'want',
+        isPublic: false,
         tags: [{ tag: 'Классика' }, { tag: 'Готика' }, { tag: 'Ужасы' }],
         coverFile: 'zazhivo-pogrebennye.jpg',
         notes: [
@@ -377,8 +381,9 @@ async function resolveCover(payload: Payload, coverFile: string, alt: string): P
     }
 }
 
-// Вызывается в onInit: сеет книги только в пустую коллекцию, чтобы перезапуски не плодили дубли.
-export async function seedMockBooks(payload: Payload): Promise<void> {
+// Сеет мок-библиотеку конкретному пользователю; только в пустую коллекцию, чтобы
+// перезапуски не плодили дубли.
+export async function seedMockBooks(payload: Payload, owner: number): Promise<void> {
     const { totalDocs } = await payload.count({ collection: 'books' })
 
     if (totalDocs > 0) {
@@ -391,7 +396,7 @@ export async function seedMockBooks(payload: Payload): Promise<void> {
 
         const book = await payload.create({
             collection: 'books',
-            data: cover !== null ? { ...data, cover } : data,
+            data: { ...data, owner, ...(cover !== null ? { cover } : {}) },
         })
 
         for (const note of notes ?? []) {
@@ -402,5 +407,18 @@ export async function seedMockBooks(payload: Payload): Promise<void> {
         }
     }
 
-    payload.logger.info(`Занесено моковых книг: ${MOCK_BOOKS.length}`)
+    payload.logger.info(`Занесено моковых книг: ${MOCK_BOOKS.length} (владелец: ${owner})`)
+}
+
+// Вызывается в onInit: моки уходят первому пользователю; если его ещё нет —
+// мок-библиотеку получит первый зарегистрировавшийся (см. AuthRepository.register).
+export async function seedMockBooksForFirstUser(payload: Payload): Promise<void> {
+    const { docs } = await payload.find({ collection: 'users', limit: 1, overrideAccess: true })
+
+    if (docs.length === 0) {
+        payload.logger.warn('Пользователей нет — мок-библиотека будет создана при первой регистрации')
+        return
+    }
+
+    await seedMockBooks(payload, docs[0].id)
 }

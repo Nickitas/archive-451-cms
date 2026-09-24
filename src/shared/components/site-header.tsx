@@ -32,7 +32,8 @@ export async function SiteHeader({ user }: SiteHeaderProps) {
                 </Link>
 
                 <nav className="flex items-center gap-1">
-                    <SiteNavLink href="/">{t.nav.library}</SiteNavLink>
+                    <SiteNavLink href="/">{t.nav.feed}</SiteNavLink>
+                    <SiteNavLink href="/library">{t.nav.library}</SiteNavLink>
                     <SiteNavLink href="/admin">{t.nav.admin}</SiteNavLink>
                     <ThemeToggle />
 

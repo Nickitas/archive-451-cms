@@ -14,7 +14,7 @@ export async function ProfileView() {
     }
 
     // Статистика библиотеки из модуля книг: подсчёт заметок живёт там
-    const stats = await BooksRepository.getLibraryStats();
+    const stats = await BooksRepository.getLibraryStats(user.id);
 
     return <ProfileCard user={user} stats={stats} locale={locale} />;
 }

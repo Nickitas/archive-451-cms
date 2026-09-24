@@ -1,5 +1,6 @@
 import { CollectionConfig } from 'payload';
 import { isAdmin } from '../access/is-admin';
+import { seedMockBooks } from '../seed/mock-books';
 
 export const UserCollection: CollectionConfig = {
     slug: 'users',
@@ -25,6 +26,45 @@ export const UserCollection: CollectionConfig = {
         update: isAdmin,
         delete: isAdmin,
         read: () => true,
+    },
+    // Уходя, пользователь забирает библиотеку: заметки и книги удаляются перед удалением профиля
+    // (иначе Payload при разрыве связей пробует выставить books.owner в NULL, а колонка NOT NULL)
+    hooks: {
+        // Демо-наполнение: если библиотек ещё нет, новому пользователю достаются мок-книги.
+        // Хук, а не экшен регистрации — чтобы срабатывал и на создании первого пользователя из админки.
+        afterChange: [
+            async ({ doc, operation, req }) => {
+                if (operation !== 'create') {
+                    return;
+                }
+
+                try {
+                    await seedMockBooks(req.payload, doc.id);
+                } catch (error) {
+                    req.payload.logger.error({ err: error, msg: 'Не удалось засеять мок-библиотеку' });
+                }
+            },
+        ],
+        beforeDelete: [
+            async ({ req, id }) => {
+                const books = await req.payload.find({
+                    collection: 'books',
+                    where: { owner: { equals: id } },
+                    limit: 0,
+                    depth: 0,
+                    overrideAccess: true,
+                });
+
+                for (const book of books.docs) {
+                    await req.payload.delete({
+                        collection: 'notes',
+                        where: { book: { equals: book.id } },
+                        overrideAccess: true,
+                    });
+                    await req.payload.delete({ collection: 'books', id: book.id, overrideAccess: true });
+                }
+            },
+        ],
     },
     fields: [
         {

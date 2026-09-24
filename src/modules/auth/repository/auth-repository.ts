@@ -124,6 +124,7 @@ export const AuthRepository = {
             return 'email-taken';
         }
 
+        // Демо-наполнение первого пользователя делает хук afterChange коллекции users
         try {
             await payload.create({
                 collection: 'users',
