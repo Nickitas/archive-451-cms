@@ -1,12 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BookOpen, CalendarDays, ExternalLink, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen, CalendarDays, ExternalLink, Plus, Star } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { SiteContainer } from '@/shared/components/site-container';
+import { NoteBacklinks } from '@/shared/components/note-backlinks';
+import { MarkdownTargetProvider } from '@/shared/components/markdown-target-provider';
 import { getLocale } from '@/shared/i18n/get-locale';
 import { formatDate } from '@/shared/i18n/format';
 import type { Locale } from '@/shared/i18n/config';
 import { AuthRepository } from '@/modules/auth/repository/auth-repository';
+import { NotesRepository } from '@/modules/notes/repository/notes-repository';
+import { createBacklinkIndex, createObsidianTargets, getBacklinks, type BacklinkIndex, type ObsidianTarget } from '@/modules/notes/domain/obsidian';
+import type { Note as NoteRecord } from '@/modules/notes/domain/note';
 import type { Book } from '../domain/book';
 import { booksCopy } from '../domain/i18n';
 import { pluralizeNotes } from '../domain/note';
@@ -28,20 +33,37 @@ export async function BookDetail({ id }: { id: number }) {
         notFound();
     }
 
-    const locale = await getLocale();
-    const notes = await BooksRepository.getBookNotes(book.id, user.id);
+    const [locale, context] = await Promise.all([
+        getLocale(),
+        NotesRepository.getObsidianContext(user.id),
+    ]);
+    const notes = context.notes.filter((note) => note.bookId === book.id);
+    const targets = createObsidianTargets(context.books, context.notes);
+    const backlinkIndex = createBacklinkIndex(context.notes, targets);
 
-    return <BookDetailContent book={book} notes={notes} locale={locale} />;
+    return (
+        <BookDetailContent
+            book={book}
+            notes={notes}
+            targets={targets}
+            backlinkIndex={backlinkIndex}
+            locale={locale}
+        />
+    );
 }
 
 type BookDetailContentProps = {
     book: Book;
-    notes: Awaited<ReturnType<typeof BooksRepository.getBookNotes>>;
+    notes: NoteRecord[];
+    targets: ObsidianTarget[];
+    backlinkIndex: BacklinkIndex;
     locale: Locale;
 };
 
-function BookDetailContent({ book, notes, locale }: BookDetailContentProps) {
+function BookDetailContent({ book, notes, targets, backlinkIndex, locale }: BookDetailContentProps) {
     const t = booksCopy[locale];
+    const bookTarget = targets.find((target) => target.kind === 'book' && target.id === book.id);
+    const bookBacklinks = bookTarget ? getBacklinks(backlinkIndex, bookTarget) : [];
     const finishedAt =
         book.finishedAt !== null
             ? formatDate(locale, book.finishedAt, {
@@ -71,7 +93,20 @@ function BookDetailContent({ book, notes, locale }: BookDetailContentProps) {
                     <BookMeta book={book} finishedAt={finishedAt} notesCount={notes.length} locale={locale} />
                 </div>
 
-                <NotesSection notes={notes} locale={locale} />
+                <NoteBacklinks
+                    title={t.detail.bookBacklinksTitle}
+                    emptyMessage={t.detail.bookBacklinksEmpty}
+                    backlinks={bookBacklinks}
+                />
+                <MarkdownTargetProvider targets={targets}>
+                    <NotesSection
+                        notes={notes}
+                        targets={targets}
+                        backlinkIndex={backlinkIndex}
+                        locale={locale}
+                        bookId={book.id}
+                    />
+                </MarkdownTargetProvider>
             </SiteContainer>
         </main>
     );
@@ -156,7 +191,7 @@ function BookMeta({
                 <Button asChild variant="outline" className="w-fit">
                     <a href={book.sourceUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
-                        {t.detail.openInYandex}
+                        {t.detail.openSource}
                     </a>
                 </Button>
             )}
@@ -164,17 +199,35 @@ function BookMeta({
     );
 }
 
-function NotesSection({ notes, locale }: { notes: BookDetailContentProps['notes']; locale: Locale }) {
+function NotesSection({
+    notes,
+    targets,
+    backlinkIndex,
+    locale,
+    bookId,
+}: {
+    notes: BookDetailContentProps['notes'];
+    targets: ObsidianTarget[];
+    backlinkIndex: BacklinkIndex;
+    locale: Locale;
+    bookId: number;
+}) {
     const t = booksCopy[locale];
 
     return (
         <section className="mt-12">
-            <div className="mb-5 flex items-center gap-3">
+            <div className="mb-5 flex flex-wrap items-center gap-3">
                 <h2 className="font-heading text-xl font-bold tracking-tight">{t.detail.notesSection}</h2>
                 <span className="rounded-full border border-border bg-card/60 px-2.5 py-0.5 text-xs text-muted-foreground">
                     {notes.length}
                 </span>
                 <div className="h-px flex-1 bg-border" />
+                <Button asChild variant="outline" size="sm">
+                    <Link href={`/notes/new?bookId=${bookId}`}>
+                        <Plus aria-hidden className="h-4 w-4" />
+                        {t.detail.addNote}
+                    </Link>
+                </Button>
             </div>
 
             {notes.length === 0 ? (
@@ -185,9 +238,12 @@ function NotesSection({ notes, locale }: { notes: BookDetailContentProps['notes'
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                    {notes.map((note) => (
-                        <NoteCard key={note.id} note={note} />
-                    ))}
+                    {notes.map((note) => {
+                        const target = targets.find((candidate) => candidate.kind === 'note' && candidate.id === note.id);
+                        const backlinks = target ? getBacklinks(backlinkIndex, target) : [];
+
+                        return <NoteCard key={note.id} note={note} locale={locale} backlinks={backlinks} />;
+                    })}
                 </div>
             )}
         </section>

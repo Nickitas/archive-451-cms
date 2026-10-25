@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, LogOut, NotebookText, Settings, UserRound } from 'lucide-react';
+import { BookOpen, LogOut, NotebookText, Settings, Share2, UserRound } from 'lucide-react';
 import { cn } from 'cn';
 import { useLocale } from '@/shared/i18n/locale-provider';
 import { authCopy } from '../domain/i18n';
@@ -14,6 +14,7 @@ const ACCOUNT_SECTIONS = [
     { href: '/notes', key: 'notes', icon: NotebookText },
     { href: '/settings', key: 'settings', icon: Settings },
     { href: '/library', key: 'library', icon: BookOpen },
+    { href: '/share', key: 'share', icon: Share2 },
 ] as const;
 
 export function AccountNav() {

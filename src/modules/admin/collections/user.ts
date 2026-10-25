@@ -47,6 +47,12 @@ export const UserCollection: CollectionConfig = {
         ],
         beforeDelete: [
             async ({ req, id }) => {
+                await req.payload.delete({
+                    collection: 'library-shares',
+                    where: { owner: { equals: id } },
+                    overrideAccess: true,
+                });
+
                 const books = await req.payload.find({
                     collection: 'books',
                     where: { owner: { equals: id } },

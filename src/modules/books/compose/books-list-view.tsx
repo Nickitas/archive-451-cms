@@ -1,28 +1,27 @@
 'use client';
 
 import { useState, type UIEvent } from 'react';
-import { BookOpen, LayoutGrid, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { BookOpen, LayoutGrid, Plus, SlidersHorizontal } from 'lucide-react';
 import { cn } from 'cn';
 import { useLocale } from '@/shared/i18n/locale-provider';
 import { Button } from '@/shared/components/ui/button';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/shared/components/ui/sheet';
-import type { Book } from '../domain/book';
 import { booksCopy } from '../domain/i18n';
 import { useBooksView } from '../model/use-books-view';
+import type { BooksPageResult, BooksQuery } from '../domain/book-filters';
 import { BOOKS_GRID_CLASS } from '../ui/book-skeleton';
 import { BookCard } from '../ui/book-card';
 import { BooksFilters } from '../ui/books-filters';
 import { BooksPagination } from '../ui/books-pagination';
 
-type BooksListViewProps = {
-    books: Book[];
-};
+type BooksListViewProps = { result: BooksPageResult; query: BooksQuery };
 
-export function BooksListView({ books }: BooksListViewProps) {
+export function BooksListView({ result, query }: BooksListViewProps) {
     const locale = useLocale();
     const t = booksCopy[locale];
-    const v = useBooksView(books);
+    const v = useBooksView(query);
     const [collapsed, setCollapsed] = useState(false);
 
     // Шапка сжимается, когда список прокручен; порог — пара «строк» скролла
@@ -56,31 +55,40 @@ export function BooksListView({ books }: BooksListViewProps) {
                         )}
                     >
                         {t.list.showingPrefix}{' '}
-                        <span className="font-medium text-foreground">{v.filteredCount}</span> {t.list.showingOf}{' '}
-                        <span className="font-medium text-foreground">{v.totalCount}</span>
+                        <span className="font-medium text-foreground">{result.filteredCount}</span> {t.list.showingOf}{' '}
+                        <span className="font-medium text-foreground">{result.totalCount}</span>
                     </p>
                 </div>
 
-                <div className="hidden items-center rounded-lg border border-border/70 bg-card/60 p-1 sm:flex">
-                    <Button
-                        variant={v.view === 'grid' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        onClick={() => v.setView('grid')}
-                        className="h-8 gap-2"
-                    >
-                        <LayoutGrid className="h-4 w-4" />
-                        {t.list.viewGrid}
+                <div className="flex shrink-0 items-center gap-2">
+                    <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 px-2 sm:px-3">
+                        <Link href="/library/new">
+                            <Plus aria-hidden className="h-4 w-4" />
+                            <span className="hidden sm:inline">{t.list.addBook}</span>
+                            <span className="sr-only sm:hidden">{t.list.addBook}</span>
+                        </Link>
                     </Button>
+                    <div className="hidden items-center rounded-lg border border-border/70 bg-card/60 p-1 sm:flex">
+                        <Button
+                            variant={v.view === 'grid' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => v.setView('grid')}
+                            className="h-8 gap-2"
+                        >
+                            <LayoutGrid className="h-4 w-4" />
+                            {t.list.viewGrid}
+                        </Button>
 
-                    <Button
-                        variant={v.view === 'list' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        onClick={() => v.setView('list')}
-                        className="h-8 gap-2"
-                    >
-                        <BookOpen className="h-4 w-4" />
-                        {t.list.viewList}
-                    </Button>
+                        <Button
+                            variant={v.view === 'list' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => v.setView('list')}
+                            className="h-8 gap-2"
+                        >
+                            <BookOpen className="h-4 w-4" />
+                            {t.list.viewList}
+                        </Button>
+                    </div>
                 </div>
             </header>
 
@@ -91,7 +99,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                         setSearch={v.setSearch}
                         statuses={v.statuses}
                         toggleStatus={v.toggleStatus}
-                        tags={v.tags}
+                        tags={result.tags}
                         selectedTags={v.selectedTags}
                         toggleTag={v.toggleTag}
                         minRating={v.minRating}
@@ -128,7 +136,7 @@ export function BooksListView({ books }: BooksListViewProps) {
                                     setSearch={v.setSearch}
                                     statuses={v.statuses}
                                     toggleStatus={v.toggleStatus}
-                                    tags={v.tags}
+                                    tags={result.tags}
                                     selectedTags={v.selectedTags}
                                     toggleTag={v.toggleTag}
                                     minRating={v.minRating}
@@ -153,9 +161,9 @@ export function BooksListView({ books }: BooksListViewProps) {
                 </div>
             </section>
 
-            <div className="min-h-0 flex-1 overflow-y-auto" onScroll={handleListScroll}>
+            <div className="min-h-0 flex-1 overflow-y-auto" onScroll={handleListScroll} aria-busy={v.isPending}>
                 <div className="px-4 py-4">
-                    {v.isEmpty ? (
+                    {result.books.length === 0 ? (
                         <div className="flex min-h-50 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/30 px-6 text-center">
                             <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-muted ring-1 ring-border">
                                 <BookOpen className="h-7 w-7 text-primary/70" />
@@ -164,13 +172,19 @@ export function BooksListView({ books }: BooksListViewProps) {
                             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                                 {t.list.emptyDescription}
                             </p>
-                            <Button onClick={v.clearFilters} variant="outline" className="mt-5">
-                                {t.list.resetFilters}
-                            </Button>
+                            {result.totalCount === 0 ? (
+                                <Button asChild variant="outline" className="mt-5">
+                                    <Link href="/library/new">{t.list.addBook}</Link>
+                                </Button>
+                            ) : (
+                                <Button onClick={v.clearFilters} variant="outline" className="mt-5">
+                                    {t.list.resetFilters}
+                                </Button>
+                            )}
                         </div>
                     ) : (
-                        <div className={gridClass}>
-                            {v.visibleBooks.map((book) => (
+                        <div className={cn(gridClass, v.isPending && 'opacity-60')}>
+                            {result.books.map((book) => (
                                 <BookCard key={book.id} book={book} view={v.view} />
                             ))}
                         </div>
@@ -178,11 +192,11 @@ export function BooksListView({ books }: BooksListViewProps) {
                 </div>
             </div>
 
-            {v.filteredCount > 0 && (
+            {result.filteredCount > 0 && (
                 <div className="border-t border-border/70 px-4 py-1.5">
                     <BooksPagination
                         page={v.page}
-                        totalPages={v.totalPages}
+                        totalPages={result.totalPages}
                         pageSize={v.pageSize}
                         onPageChange={v.setPage}
                         onPageSizeChange={v.changePageSize}

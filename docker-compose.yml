@@ -15,12 +15,12 @@ services:
     image: quay.io/minio/minio:latest
     entrypoint: sh
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     command: -c 'minio server --console-address ":9001" /data'
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minio123}
     volumes:
       - minio-data:/data
     healthcheck:
@@ -32,14 +32,26 @@ services:
     image: quay.io/minio/mc
     depends_on:
       - minio
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10;
-      /usr/bin/mc alias set myminio http://minio:9000 minio minio123;
-      /usr/bin/mc mb myminio/images;
-      /usr/bin/mc anonymous set public myminio/images;
-      exit 0;
-      "
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minio123}
+      S3_IMAGES_BUCKET: ${S3_IMAGES_BUCKET:-images}
+    volumes:
+      - ./media:/migration-media:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      set -eu
+      attempt=0
+      until mc alias set myminio http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
+        attempt=$$((attempt + 1))
+        if [ "$$attempt" -ge 30 ]; then
+          echo "MinIO did not become ready within 30 seconds." >&2
+          exit 1
+        fi
+        sleep 1
+      done
+      mc mb --ignore-existing "myminio/$$S3_IMAGES_BUCKET"
+      mc anonymous set public "myminio/$$S3_IMAGES_BUCKET"
 
 volumes:
   main-db:

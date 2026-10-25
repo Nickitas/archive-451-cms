@@ -52,12 +52,17 @@ export const BooksCollection: CollectionConfig = {
             label: { ru: 'Владелец', en: 'Owner' },
         },
         {
+            type: 'relationship', name: 'authors', relationTo: 'authors', hasMany: true,
+            label: { ru: 'Авторы', en: 'Authors' },
+        },
+        {
             type: "text", name: "title", required: true,
             label: { ru: 'Название', en: 'Title' },
         },
         {
             type: "text", name: "author",
-            label: { ru: 'Автор', en: 'Author' },
+            admin: { description: { ru: 'Старое текстовое поле; новые книги используют связь «Авторы».', en: 'Legacy text field; new books use the Authors relationship.' } },
+            label: { ru: 'Автор (старое поле)', en: 'Author (legacy field)' },
         },
         {
             type: "textarea", name: "description",
@@ -68,8 +73,12 @@ export const BooksCollection: CollectionConfig = {
             label: { ru: 'Обложка', en: 'Cover' },
         },
         {
+            type: "text", name: "coverUrl",
+            label: { ru: 'Обложка по ссылке Open Library', en: 'Open Library cover URL' },
+        },
+        {
             type: "text", name: "sourceUrl",
-            label: { ru: 'Ссылка на Яндекс.Книги', en: 'Yandex Books URL' },
+            label: { ru: 'Ссылка на источник', en: 'Source URL' },
         },
         {
             type: "select", name: "status", defaultValue: "want",

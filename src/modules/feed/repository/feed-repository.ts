@@ -25,6 +25,9 @@ export const FeedRepository = {
             }
 
             const owner = typeof book.owner === 'object' ? book.owner : null;
+            const authors = (book.authors ?? []).flatMap((author) =>
+                typeof author === 'object' && author !== null ? [author.name] : [],
+            );
 
             return [{
                 id: doc.id,
@@ -33,7 +36,7 @@ export const FeedRepository = {
                 createdAt: doc.createdAt,
                 bookId: book.id,
                 bookTitle: book.title,
-                bookAuthor: book.author ?? '',
+                bookAuthor: authors.join(', ') || book.author || '',
                 ownerEmail: owner?.email ?? '',
             }];
         });

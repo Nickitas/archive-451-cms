@@ -7,11 +7,9 @@ import { Input } from '@/shared/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { useLocale } from '@/shared/i18n/locale-provider';
-import { BOOKS_SORT_ORDER, BOOK_STATUS_ORDER, type BooksSort } from '../domain/book-filters';
+import { BOOKS_SORT_ORDER, BOOK_STATUS_ORDER, RATING_FILTER_OPTIONS, type BooksSort } from '../domain/book-filters';
 import { booksCopy } from '../domain/i18n';
 import type { BookStatus } from '../domain/book';
-
-const RATING_OPTIONS = [0, 4, 5, 6, 7, 8, 9];
 
 type BooksFiltersProps = {
     search: string;
@@ -146,7 +144,7 @@ export function BooksFilters(props: BooksFiltersProps) {
                     <SelectValue placeholder={t.filters.ratingPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
-                    {RATING_OPTIONS.map((rating) => (
+                    {RATING_FILTER_OPTIONS.map((rating) => (
                         <SelectItem key={rating} value={String(rating)}>
                             {rating === 0 ? t.filters.ratingAny : t.filters.ratingFrom(rating)}
                         </SelectItem>

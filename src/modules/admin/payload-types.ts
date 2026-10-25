@@ -69,8 +69,10 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    authors: Author;
     books: Book;
     notes: Note;
+    'library-shares': LibraryShare;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -80,8 +82,10 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    authors: AuthorsSelect<false> | AuthorsSelect<true>;
     books: BooksSelect<false> | BooksSelect<true>;
     notes: NotesSelect<false> | NotesSelect<true>;
+    'library-shares': LibrarySharesSelect<false> | LibrarySharesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -168,15 +172,31 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors".
+ */
+export interface Author {
+  id: number;
+  name: string;
+  nameKey: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "books".
  */
 export interface Book {
   id: number;
   owner: number | User;
+  authors?: (number | Author)[] | null;
   title: string;
+  /**
+   * Legacy text field; new books use the Authors relationship.
+   */
   author?: string | null;
   description?: string | null;
   cover?: (number | null) | Media;
+  coverUrl?: string | null;
   sourceUrl?: string | null;
   status?: ('want' | 'reading' | 'done') | null;
   rating?: number | null;
@@ -200,6 +220,19 @@ export interface Note {
   title: string;
   book: number | Book;
   content?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "library-shares".
+ */
+export interface LibraryShare {
+  id: number;
+  owner: number | User;
+  tokenHash: string;
+  active: boolean;
+  books?: (number | Book)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -236,12 +269,20 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
+        relationTo: 'authors';
+        value: number | Author;
+      } | null)
+    | ({
         relationTo: 'books';
         value: number | Book;
       } | null)
     | ({
         relationTo: 'notes';
         value: number | Note;
+      } | null)
+    | ({
+        relationTo: 'library-shares';
+        value: number | LibraryShare;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -328,14 +369,26 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors_select".
+ */
+export interface AuthorsSelect<T extends boolean = true> {
+  name?: T;
+  nameKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "books_select".
  */
 export interface BooksSelect<T extends boolean = true> {
   owner?: T;
+  authors?: T;
   title?: T;
   author?: T;
   description?: T;
   cover?: T;
+  coverUrl?: T;
   sourceUrl?: T;
   status?: T;
   rating?: T;
@@ -358,6 +411,18 @@ export interface NotesSelect<T extends boolean = true> {
   title?: T;
   book?: T;
   content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "library-shares_select".
+ */
+export interface LibrarySharesSelect<T extends boolean = true> {
+  owner?: T;
+  tokenHash?: T;
+  active?: T;
+  books?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -1,90 +1,114 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
+    BOOK_STATUS_ORDER,
     DEFAULT_BOOKS_FILTERS,
     PAGE_SIZES,
-    collectBookTags,
     countActiveBookFilters,
-    filterAndSortBooks,
+    hasBookFilters,
+    serializeBooksQuery,
     type BooksFilters,
+    type BooksQuery,
     type BooksSort,
     type BooksViewMode,
 } from '../domain/book-filters';
-import type { Book, BookStatus } from '../domain/book';
+import type { BookStatus } from '../domain/book';
 
-export function useBooksView(books: Book[]) {
-    const [filters, setFilters] = useState<BooksFilters>(DEFAULT_BOOKS_FILTERS);
+function getLibraryHref(query: BooksQuery): string {
+    const search = serializeBooksQuery(query);
+    return search ? `/library?${search}` : '/library';
+}
+
+export function useBooksView(query: BooksQuery) {
+    const router = useRouter();
+    const queryKey = serializeBooksQuery(query);
+    const [queryState, setQueryState] = useState(() => ({
+        key: queryKey,
+        filters: query.filters,
+        page: query.page,
+        pageSize: query.pageSize,
+    }));
     const [view, setView] = useState<BooksViewMode>('grid');
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [isPending, startTransition] = useTransition();
+    const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { filters, page, pageSize } = queryState;
 
-    const tags = useMemo(() => collectBookTags(books), [books]);
+    if (queryState.key !== queryKey) {
+        setQueryState({ key: queryKey, filters: query.filters, page: query.page, pageSize: query.pageSize });
+    }
 
-    const filteredBooks = useMemo(() => filterAndSortBooks(books, filters), [books, filters]);
+    useEffect(() => {
+        if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+    }, [queryKey]);
 
-    const totalPages = Math.max(1, Math.ceil(filteredBooks.length / pageSize));
-    const currentPage = Math.min(page, totalPages);
-    const visibleBooks = useMemo(
-        () => filteredBooks.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-        [filteredBooks, currentPage, pageSize],
-    );
+    useEffect(() => () => {
+        if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+    }, []);
 
-    const hasFilters =
-        filters.search.trim() !== '' ||
-        filters.statuses.length > 0 ||
-        filters.selectedTags.length > 0 ||
-        filters.minRating > 0;
+    const navigate = useCallback((nextFilters: BooksFilters, nextPage: number, nextPageSize: BooksQuery['pageSize'], history: 'push' | 'replace' = 'replace') => {
+        if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+        setQueryState((current) => ({ ...current, filters: nextFilters, page: nextPage, pageSize: nextPageSize }));
 
-    const activeFilterCount = countActiveBookFilters(filters);
+        const href = getLibraryHref({ filters: nextFilters, page: nextPage, pageSize: nextPageSize });
+        startTransition(() => {
+            if (history === 'push') router.push(href, { scroll: false });
+            else router.replace(href, { scroll: false });
+        });
+    }, [router]);
 
     const setSearch = useCallback((search: string) => {
-        setFilters((current) => ({ ...current, search }));
-        setPage(1);
-    }, []);
+        const nextFilters = { ...filters, search };
+        setQueryState((current) => ({ ...current, filters: nextFilters, page: 1 }));
+
+        if (searchTimer.current !== null) clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            const href = getLibraryHref({ filters: nextFilters, page: 1, pageSize });
+            startTransition(() => router.replace(href, { scroll: false }));
+        }, 300);
+    }, [filters, pageSize, router]);
 
     const toggleStatus = useCallback((status: BookStatus) => {
-        setFilters((current) => ({
-            ...current,
-            statuses: current.statuses.includes(status)
-                ? current.statuses.filter((item) => item !== status)
-                : [...current.statuses, status],
-        }));
-        setPage(1);
-    }, []);
+        const statuses = filters.statuses.includes(status)
+            ? filters.statuses.filter((item) => item !== status)
+            : BOOK_STATUS_ORDER.filter((item) => filters.statuses.includes(item) || item === status);
+        navigate({ ...filters, statuses }, 1, pageSize);
+    }, [filters, navigate, pageSize]);
 
     const toggleTag = useCallback((tag: string) => {
-        setFilters((current) => ({
-            ...current,
-            selectedTags: current.selectedTags.includes(tag)
-                ? current.selectedTags.filter((item) => item !== tag)
-                : [...current.selectedTags, tag],
-        }));
-        setPage(1);
-    }, []);
+        const selectedTags = filters.selectedTags.includes(tag)
+            ? filters.selectedTags.filter((item) => item !== tag)
+            : [...filters.selectedTags, tag];
+        navigate({ ...filters, selectedTags }, 1, pageSize);
+    }, [filters, navigate, pageSize]);
 
     const setMinRating = useCallback((minRating: number) => {
-        setFilters((current) => ({ ...current, minRating }));
-        setPage(1);
-    }, []);
+        navigate({ ...filters, minRating }, 1, pageSize);
+    }, [filters, navigate, pageSize]);
 
     const setSort = useCallback((sort: BooksSort) => {
-        setFilters((current) => ({ ...current, sort }));
-    }, []);
+        navigate({ ...filters, sort }, page, pageSize);
+    }, [filters, navigate, page, pageSize]);
 
     const clearFilters = useCallback(() => {
-        setFilters(DEFAULT_BOOKS_FILTERS);
-        setPage(1);
-    }, []);
+        navigate(DEFAULT_BOOKS_FILTERS, 1, pageSize);
+    }, [navigate, pageSize]);
 
     const toggleView = useCallback(() => {
         setView((current) => (current === 'grid' ? 'list' : 'grid'));
     }, []);
 
     const changePageSize = useCallback((value: string) => {
-        setPageSize(Number(value));
-        setPage(1);
-    }, []);
+        const nextPageSize = Number(value);
+        if (PAGE_SIZES.includes(nextPageSize as BooksQuery['pageSize'])) {
+            navigate(filters, 1, nextPageSize as BooksQuery['pageSize']);
+        }
+    }, [filters, navigate]);
+
+    const changePage = useCallback((nextPage: number) => {
+        navigate(filters, nextPage, pageSize, 'push');
+    }, [filters, navigate, pageSize]);
 
     return {
         view,
@@ -92,7 +116,6 @@ export function useBooksView(books: Book[]) {
         toggleView,
         search: filters.search,
         setSearch,
-        tags,
         statuses: filters.statuses,
         toggleStatus,
         selectedTags: filters.selectedTags,
@@ -102,16 +125,12 @@ export function useBooksView(books: Book[]) {
         sort: filters.sort,
         setSort,
         clearFilters,
-        hasFilters,
-        activeFilterCount,
-        totalCount: books.length,
-        filteredCount: filteredBooks.length,
-        visibleBooks,
-        isEmpty: visibleBooks.length === 0,
-        page: currentPage,
-        totalPages,
+        hasFilters: hasBookFilters(filters),
+        activeFilterCount: countActiveBookFilters(filters),
+        page,
         pageSize,
+        isPending,
+        setPage: changePage,
         changePageSize,
-        setPage,
     };
 }

@@ -7,7 +7,6 @@ const authCopyRu = {
         forgotPassword: 'Восстановление пароля',
         resetPassword: 'Новый пароль',
         profile: 'Профиль',
-        notes: 'Мои заметки',
         settings: 'Настройки',
     },
     roles: { admin: 'Администратор', user: 'Читатель' },
@@ -86,6 +85,7 @@ const authCopyRu = {
         notes: 'Мои заметки',
         settings: 'Настройки',
         library: 'Библиотека',
+        share: 'Поделиться',
         logout: 'Выйти',
     },
     userMenu: {
@@ -116,10 +116,6 @@ const authCopyRu = {
         books: { one: 'книга', few: 'книги', many: 'книг' },
         notes: { one: 'заметка', few: 'заметки', many: 'заметок' },
     },
-    notesPlaceholder: {
-        title: 'Мои заметки',
-        description: 'Все заметки из всех книг в одном месте — с поиском и wiki-ссылками.',
-    },
 };
 
 export type AuthCopy = typeof authCopyRu;
@@ -132,7 +128,6 @@ export const authCopy: Record<Locale, AuthCopy> = {
             forgotPassword: 'Password recovery',
             resetPassword: 'New password',
             profile: 'Profile',
-            notes: 'My notes',
             settings: 'Settings',
         },
         roles: { admin: 'Administrator', user: 'Reader' },
@@ -210,6 +205,7 @@ export const authCopy: Record<Locale, AuthCopy> = {
             notes: 'My notes',
             settings: 'Settings',
             library: 'Library',
+            share: 'Share library',
             logout: 'Log out',
         },
         userMenu: {
@@ -239,10 +235,6 @@ export const authCopy: Record<Locale, AuthCopy> = {
             changePassword: 'Change password',
             books: { one: 'book', few: 'books', many: 'books' },
             notes: { one: 'note', few: 'notes', many: 'notes' },
-        },
-        notesPlaceholder: {
-            title: 'My notes',
-            description: 'All notes from all books in one place — with search and wiki links.',
         },
     },
 };

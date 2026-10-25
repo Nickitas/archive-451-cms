@@ -21,8 +21,14 @@ Alias'ы: `@/*` → `./src/*`, `@payload-config` → `./src/modules/admin/payloa
 
 Docker (`docker-compose.yml`, имя проекта `archive-451-cms`): `main-db` (postgres, **5433:5432** —
 порт 5432 на хосте занят нативным Postgres EnterpriseDB, см. `/Library/LaunchDaemons/postgresql-17.plist`),
-`minio` (9000, консоль 9001), `createbuckets` (бакет `images`, public).
-`.env`: `DATABASE_URI` (порт 5433), `PAYLOAD_SECRET` — обязательны; `S3_*` — на этап подключения MinIO-стораджа.
+`minio` (host ports `MINIO_PORT` / `MINIO_CONSOLE_PORT`, defaults 9000/9001), `createbuckets` (бакет `images`, public).
+`.env`: `DATABASE_URI` (порт 5433), `PAYLOAD_SECRET` — обязательны. Payload S3 adapter включается,
+если заданы `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` и `S3_ENDPOINT`; бакет задаётся
+`S3_IMAGES_BUCKET`, регион — `S3_REGION`. Перед запуском Next с S3 выполните
+`scripts/migrate-media-to-s3.sh` (по умолчанию `.env.development`): файлы копируются в бакет,
+локальные файлы `media/` сохраняются для отката. После изменения storage plugin сгенерируйте
+Payload import map командой `pnpm exec payload generate:importmap`. Docker и приложение используют
+один набор S3 env vars.
 
 ⚠️ **Схема БД в dev применяется через drizzle push при старте dev-сервера.** Push интерактивен:
 при переименованиях коллекций он задаёт вопросы «rename or create?» и блокирует сервер.
@@ -33,14 +39,80 @@ Docker (`docker-compose.yml`, имя проекта `archive-451-cms`): `main-db
 ### 2.1 Слои модуля `src/modules/books/`
 
 ```
-compose/      books-list.tsx (сервер+Suspense), books-list-view.tsx ('use client'), book-detail.tsx (сервер)
-model/        use-books-view.ts — фильтры, статусы, теги, пагинация, вид
-domain/       book.ts (сущность+статусы), note.ts (сущность+плюрализация), book-filters.ts (чистая логика)
-repository/   books-repository.ts — Payload Local API + маппинг в домен; все методы принимают
-              userId и зовут операции с `user: { id }` + `overrideAccess: false` — фильтрацию
-              делает access-слой коллекций; getLibraryStats() — счётчики для профиля
-ui/           book-card, book-skeleton, books-filters, books-pagination, note-card, status-badge
+compose/      books-list.tsx (сервер+Suspense, читает searchParams), books-list-view.tsx ('use client'), book-detail.tsx (сервер),
+              book-editor.tsx (сервер) и book-editor-client.tsx (клиент)
+model/        use-books-view.ts — URL-синхронизация фильтров и страницы, вид; use-book-editor.ts — состояния поиска и сохранения
+domain/       book.ts (сущность+статусы), author.ts (нормализация имени), book-editor.ts (кандидат, состояния и проверка URL),
+              note.ts (сущность+плюрализация), book-filters.ts (чистая логика), i18n.ts
+repository/   books-repository.ts — Payload Local API + маппинг в домен; getBooksPage() принимает
+              userId и нормализованный запрос, передаёт where/sort/page в Local API и возвращает
+              текущую страницу, счётчики и теги. Запросы выполняются с `user: { id }` и
+              `overrideAccess: false`; getLibraryStats() — счётчики для профиля;
+              open-library-repository.ts — поиск каталога по запросу, ограниченный по времени и выдаче
+ui/           book-card, book-skeleton, books-filters, books-pagination, note-card, status-badge, book-editor-view
+actions/      book-editor.ts — серверная проверка сессии и данных, поиск каталога и создание книги
 ```
+
+`/library` читает асинхронный Next.js `searchParams`; состояние поиска (`q`), статусов (`status`),
+тегов (`tag`), рейтинга, сортировки, страницы и размера (`size`) сериализуется в URL. Поиск,
+фильтры и пагинация остаются на сервере: Payload возвращает максимум 12/24/48 книг. Для списка
+тегов выбирается только поле `tags`, а для счётчиков заметок — связи книг текущей страницы.
+
+`/library/new` ищет книги через [Open Library Search API](https://openlibrary.org/dev/docs/api/search),
+а внешние обложки отображает напрямую через [Covers API](https://openlibrary.org/dev/docs/api/covers).
+Результаты редактируются до сохранения, действие заполняет только пустые поля. Создание использует
+Payload Local API с `user` и `overrideAccess: false`. Ссылка на запись каталога сохраняется в
+`sourceUrl`; загруженное отношение `cover` имеет приоритет над `coverUrl`.
+
+Публичного API Яндекс.Книг для поиска библиографических данных в проверенной документации не найдено.
+Поиск через внутренние запросы или автоматический разбор страниц не используется с учётом
+[пользовательского соглашения Яндекс.Книг](https://yandex.ru/legal/yandex_books_termsofuse/ru/).
+
+Модуль `src/modules/notes/` — список пользовательских заметок и фронтендное создание/редактирование:
+
+```
+compose/      notes-list.tsx (сервер: загрузка заметок), note-editor.tsx (сервер: доступ и данные),
+              note-editor-client.tsx (клиентская форма и связка с action/model)
+model/        use-note-form.ts — состояние server action и ожидание отправки
+domain/       note.ts (модель заметки, книги для выбора, состояние формы), obsidian.ts
+              (точное разрешение wiki-ссылок, backlinks, фильтрация #тегов), i18n.ts (ru/en)
+repository/   notes-repository.ts — Payload Local API, userId и overrideAccess: false для чтения,
+              создания и редактирования; getObsidianContext() возвращает цели только своей библиотеки
+ui/           notes-list-view.tsx (GET-поиск и теговый фильтр), note-form-view.tsx (поля и Markdown-предпросмотр)
+actions/      notes.ts — серверная валидация, проверка сессии, вызов repository и revalidatePath
+```
+
+Серверные actions повторно проверяют сессию и входные данные. Repository скоупит Local API по
+`user: { id }` без роли и с `overrideAccess: false`; при создании дополнительно проверяется доступ
+к выбранной книге. Изменить связь существующей заметки с книгой через фронтенд нельзя.
+Markdown рендерится через общий `@/shared/components/markdown-content.tsx`; remark-плагин
+поддерживает GFM, `[[Название]]` и `#тег`. Разрешённые заголовки и backlinks строятся только из
+`getObsidianContext(userId)` с `overrideAccess: false`; одинаковые или отсутствующие заголовки
+остаются текстом. Сканер backlinks и тегов исключает код и обычные Markdown-ссылки.
+
+`getUserNotes(userId, search)` выполняет глобальный поиск в заголовке и Markdown-содержимом заметки,
+названии книги и имени связанного автора через Payload `contains`. Запрос ограничен 200 символами
+в compose и остаётся в user-scoped Local API (`overrideAccess: false`).
+
+Модуль `src/modules/sharing/` обслуживает приватную панель `/share` и публичную страницу `/s/[token]`:
+
+```
+compose/      share-manager.tsx, shared-library.tsx (проверка токена и подготовка публичных данных)
+domain/       share.ts (типы сущности и состояния), i18n.ts
+repository/   sharing-repository.ts — bearer token, хранение только SHA-256, отзыв и проверка;
+              книги читаются через BooksRepository
+ui/           share-manager-view.tsx, shared-library-view.tsx
+actions/      library-share.ts — валидация, сохранение/ротация и отзыв сессией владельца
+```
+
+Public resolver делает `overrideAccess: true` только после проверки формата активного токена. Запрос
+книг дополнительно ограничивает owner, выбранными ID и `isPublic: true`; DTO публичной страницы не
+включает заметки или данные пользователя. Маршрут помечен `robots: noindex, nofollow`.
+
+Коллекция `authors` хранит отображаемое имя и уникальный нормализованный ключ; новые книги связывают
+запись через `books.authors`, а старое поле `books.author` сохраняется для совместимости. Скрипт
+`scripts/migrate-book-authors.ts` идемпотентно создаёт или переиспользует автора по полному legacy-
+значению и не пытается делить строку по запятым.
 
 Модуль `src/modules/feed/` — лента заметок из публичных книг всех пользователей (`/`).
 Запрос заметок идёт с `overrideAccess: true` (намеренный обход личного скоупа) и жёстким

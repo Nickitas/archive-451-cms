@@ -1,19 +1,22 @@
-'use client';
-
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import { cn } from 'cn';
-import { useLocale } from '@/shared/i18n/locale-provider';
+import { Button } from '@/shared/components/ui/button';
+import { MarkdownContent } from '@/shared/components/markdown-content';
+import { NoteBacklinks, type NoteBacklink } from '@/shared/components/note-backlinks';
 import { formatDate } from '@/shared/i18n/format';
+import type { Locale } from '@/shared/i18n/config';
 import type { Note } from '../domain/note';
+import { booksCopy } from '../domain/i18n';
 
 type NoteCardProps = {
     note: Note;
+    locale: Locale;
+    backlinks: NoteBacklink[];
     className?: string;
 };
 
-export function NoteCard({ note, className }: NoteCardProps) {
-    const locale = useLocale();
+export function NoteCard({ note, locale, backlinks, className }: NoteCardProps) {
     const date = formatDate(locale, note.createdAt, {
         day: 'numeric',
         month: 'long',
@@ -27,16 +30,29 @@ export function NoteCard({ note, className }: NoteCardProps) {
                 className,
             )}
         >
-            <header className="mb-3 flex items-baseline justify-between gap-3">
+            <header className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="font-medium">{note.title}</h3>
-                <time className="shrink-0 text-xs text-muted-foreground">{date}</time>
+                <div className="flex shrink-0 items-center gap-2">
+                    <time className="text-xs text-muted-foreground">{date}</time>
+                    <Button asChild variant="ghost" size="icon-sm">
+                        <Link href={`/notes/${note.id}`} aria-label={booksCopy[locale].detail.editNote}>
+                            <Pencil aria-hidden className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
             </header>
 
             {note.content !== '' && (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-a:text-primary prose-blockquote:border-primary/40 prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:text-primary prose-pre:bg-muted/50">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.content}</ReactMarkdown>
-                </div>
+                <MarkdownContent content={note.content} />
             )}
+
+            <div className="mt-4">
+                <NoteBacklinks
+                    title={booksCopy[locale].detail.noteBacklinksTitle}
+                    emptyMessage={booksCopy[locale].detail.noteBacklinksEmpty}
+                    backlinks={backlinks}
+                />
+            </div>
         </article>
     );
 }

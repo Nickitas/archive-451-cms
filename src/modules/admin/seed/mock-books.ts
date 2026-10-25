@@ -1,6 +1,7 @@
 import path from 'path'
 import { fileURLToPath } from 'url'
 import type { Payload } from 'payload'
+import { findOrCreateAuthor } from '../../books/repository/authors-repository'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -393,10 +394,11 @@ export async function seedMockBooks(payload: Payload, owner: number): Promise<vo
     for (const mock of MOCK_BOOKS) {
         const { coverFile, notes, ...data } = mock
         const cover = coverFile !== undefined ? await resolveCover(payload, coverFile, mock.title) : null
+        const authorId = await findOrCreateAuthor(payload, mock.author, { userId: owner })
 
         const book = await payload.create({
             collection: 'books',
-            data: { ...data, owner, ...(cover !== null ? { cover } : {}) },
+            data: { ...data, owner, authors: [authorId], ...(cover !== null ? { cover } : {}) },
         })
 
         for (const note of notes ?? []) {
